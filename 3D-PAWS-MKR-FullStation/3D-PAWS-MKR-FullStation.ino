@@ -135,6 +135,30 @@
 // Twilio Super SIM
 // https://www.twilio.com/docs/iot/supersim/cellular-modem-knowledge-base/ublox-supersim#sara-r4-cat-m1-nb-iot
 
+/*
+ * A0   = WatchDog Monitor/Relay Reset Trigger
+ * A1   = Rain Gauge IRQ
+ * A2   = Wind Speed IRQ
+ * A3   = SPI1 SPI1 MISO LoRa
+ * A4   = Serial Console (Ground to Enable)
+ * A5   = LoRa Reset
+ * A6   = WatchDog Monitor Heartbeat
+ * 
+ * D0   = Wire1 I2C/SDA SI1145
+ * D1   = Wire1 I2C/CLK SI1145
+ * D2   = SPI1 MOSI LoRa
+ * D3   = SPI1 CLK LoRa
+ * D4   = SD Card Chip Select
+ * D5   = LoRa SS (Slave Select)
+ * D6   =
+ * D7   = LoRa IRQ
+ * D8   = SPI0 MOSI - SD Card
+ * D9   = SPI0 CLK  - SD Card
+ * D10  = SPI0 MISO - SD Card
+ * D11  = I2C SDA
+ * D12  = I2C CLK
+ */
+
 #define STOP_IF_SDNF false         // Stop booting if SD Not Found
                                   
 /* 
@@ -244,6 +268,7 @@ int DailyRebootCountDownTimer;
 #include "Network.h"
 #include "TM.h"                   // Time Management
 #include "SDC.h"                  // SD Card
+
 #include "RainWind.h"
 #include "Sensors.h"
 #include "Lora.h"
