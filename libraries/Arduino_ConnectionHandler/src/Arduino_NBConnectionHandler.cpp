@@ -70,7 +70,7 @@ NBConnectionHandler::NBConnectionHandler(char const * pin, char const * apn, cha
    PUBLIC MEMBER FUNCTIONS
  ******************************************************************************/
 // Added by ICDP
-void NBConnectionHandler::GSMResetVariables(char *pin, char *apn, char *login, char *pass)
+void NBConnectionHandler::NBResetVariables(char *pin, char *apn, char *login, char *pass)
 {
   Debug.print(DBG_INFO, F("NBResetVariables(START)"));
   _pin   = pin;

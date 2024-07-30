@@ -381,7 +381,7 @@ void setup()
 
   // Need to set connection variables and override from the call to  conMan(cf_sim_pin, "super", cf_sim_username, cf_sim_password);
 #if defined(BOARD_HAS_NB)
-  conMan.NBesetVariables(cf_sim_pin, cf_sim_apn, cf_sim_username, cf_sim_password);
+  conMan.NBResetVariables(cf_sim_pin, cf_sim_apn, cf_sim_username, cf_sim_password);
 #elif defined(BOARD_HAS_GSM)
   conMan.GSMResetVariables(cf_sim_pin, cf_sim_apn, cf_sim_username, cf_sim_password);
 #endif
