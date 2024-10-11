@@ -75,6 +75,7 @@
 //                  Rebranded 3D-PAWS_MKRNB1500-FGLD to 3D-PAWS-MKR-FullStation
 //                  Moving to CONFIG.TXT resulted in modification of the Arduino_ConnectionHandler library
 //   2024-09-04 RJB Added time checks against TM_VALID_YEAR_START and TM_VALID_YEAR_END
+//   2024-10-07 RJB Improved hi_calculate() function.
 //
 //  Note: The below 2 cases is where I have seen a reboot not resolving a modem problem.
 //        Resolution required removing of power (USB and Battery) to clean up the modem.
