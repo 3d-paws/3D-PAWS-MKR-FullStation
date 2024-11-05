@@ -287,6 +287,7 @@ void bmx_initialize() {
   
   // 1st Bosch Sensor - Need to see which (BMP, BME, BM3) is plugged in
   BMX_1_chip_id = get_Bosch_ChipID(BMX_ADDRESS_1);
+
   switch (BMX_1_chip_id) {
     case BMP280_CHIP_ID :
       if (!bmp1.begin(BMX_ADDRESS_1)) { 
@@ -298,6 +299,7 @@ void bmx_initialize() {
         BMX_1_exists = true;
         BMX_1_type = BMX_TYPE_BMP280;
         msgp = (char *) "BMP1 OK";
+        float p = bmp1.readPressure();
       }
     break;
 
@@ -311,13 +313,15 @@ void bmx_initialize() {
         else {
           BMX_1_exists = true;
           BMX_1_type = BMX_TYPE_BMP390;
-          msgp = (char *) "BMP390_1 OK";         
+          msgp = (char *) "BMP390_1 OK"; 
+          float p = bm31.readPressure();       
         }      
       }
       else {
         BMX_1_exists = true;
         BMX_1_type = BMX_TYPE_BME280;
         msgp = (char *) "BME280_1 OK";
+        float p = bme1.readPressure();
       }
     break;
 
@@ -331,6 +335,7 @@ void bmx_initialize() {
         BMX_1_exists = true;
         BMX_1_type = BMX_TYPE_BMP388;
         msgp = (char *) "BM31 OK";
+        float p = bm31.readPressure();
       }
     break;
 
@@ -344,7 +349,7 @@ void bmx_initialize() {
   BMX_2_chip_id = get_Bosch_ChipID(BMX_ADDRESS_2);
   switch (BMX_2_chip_id) {
     case BMP280_CHIP_ID :
-      if (!bmp1.begin(BMX_ADDRESS_2)) { 
+      if (!bmp2.begin(BMX_ADDRESS_2)) { 
         msgp = (char *) "BMP2 ERR";
         BMX_2_exists = false;
         SystemStatusBits |= SSB_BMX_2;  // Turn On Bit          
@@ -353,12 +358,13 @@ void bmx_initialize() {
         BMX_2_exists = true;
         BMX_2_type = BMX_TYPE_BMP280;
         msgp = (char *) "BMP2 OK";
+        float p = bmp2.readPressure();
       }
     break;
 
     case BME280_BMP390_CHIP_ID :
       if (!bme2.begin(BMX_ADDRESS_2)) { 
-        if (!bm31.begin_I2C(BMX_ADDRESS_2)) {  // Perhaps it is a BMP390
+        if (!bm32.begin_I2C(BMX_ADDRESS_2)) {  // Perhaps it is a BMP390
           msgp = (char *) "BMX2 ERR";
           BMX_2_exists = false;
           SystemStatusBits |= SSB_BMX_2;  // Turn On Bit          
@@ -366,26 +372,29 @@ void bmx_initialize() {
         else {
           BMX_2_exists = true;
           BMX_2_type = BMX_TYPE_BMP390;
-          msgp = (char *) "BMP390_2 OK";          
+          msgp = (char *) "BMP390_2 OK"; 
+          float p = bm32.readPressure();         
         }
       }
       else {
         BMX_2_exists = true;
         BMX_2_type = BMX_TYPE_BME280;
         msgp = (char *) "BME280_2 OK";
+        float p = bme2.readPressure();
       }
     break;
 
     case BMP388_CHIP_ID :
-      if (!bm31.begin_I2C(BMX_ADDRESS_2)) { 
-        msgp = (char *) "BM31 ERR";
+      if (!bm32.begin_I2C(BMX_ADDRESS_2)) { 
+        msgp = (char *) "BM32 ERR";
         BMX_2_exists = false;
         SystemStatusBits |= SSB_BMX_2;  // Turn On Bit          
       }
       else {
         BMX_2_exists = true;
         BMX_2_type = BMX_TYPE_BMP388;
-        msgp = (char *) "BM31 OK";
+        msgp = (char *) "BM32 OK";
+        float p = bm32.readPressure();
       }
     break;
 
@@ -395,6 +404,7 @@ void bmx_initialize() {
   }
   Output (msgp);
 }
+
 
 /* 
  *=======================================================================================================================

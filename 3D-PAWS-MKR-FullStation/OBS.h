@@ -536,10 +536,12 @@ void OBS_Take() {
     obs.sensor[sidx++].inuse = true;
 
     // 9 BMX1 Humidity
-    strcpy (obs.sensor[sidx].id, "bh1");
-    obs.sensor[sidx].type = F_OBS;
-    obs.sensor[sidx].f_obs = h;
-    obs.sensor[sidx++].inuse = true;
+    if (BMX_1_type == BMX_TYPE_BME280) {
+      strcpy (obs.sensor[sidx].id, "bh1");
+      obs.sensor[sidx].type = F_OBS;
+      obs.sensor[sidx].f_obs = h;
+      obs.sensor[sidx++].inuse = true;
+    }
   }
 
   if (BMX_2_exists) {
@@ -583,10 +585,12 @@ void OBS_Take() {
     obs.sensor[sidx++].inuse = true;
 
     // 12 BMX2 Humidity
-    strcpy (obs.sensor[sidx].id, "bh2");
-    obs.sensor[sidx].type = F_OBS;
-    obs.sensor[sidx].f_obs = h;
-    obs.sensor[sidx++].inuse = true;
+    if (BMX_2_type == BMX_TYPE_BME280) {
+      strcpy (obs.sensor[sidx].id, "bh2");
+      obs.sensor[sidx].type = F_OBS;
+      obs.sensor[sidx].f_obs = h;
+      obs.sensor[sidx++].inuse = true;
+    }
   }
 
   if (HTU21DF_exists) {
