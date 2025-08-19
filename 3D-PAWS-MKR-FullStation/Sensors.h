@@ -17,6 +17,11 @@
  * 
  *  Surface Observations and Station Elevation 
  *  https://forecast.weather.gov/product.php?issuedby=BOU&product=OSO&site=bou 
+ * 
+ * The Bosch BMPXXX sensors all have this issue of saving the last reading. 
+ * The recommended solution is to always throw away the first reading after any long 
+ * period of inactivity (sleep or power on).
+ * SEE https://forums.adafruit.com/viewtopic.php?t=209906
  * ======================================================================================================================
  */
 #define BMX_STATION_ELEVATION 1017.272  // default 1013.25
@@ -42,6 +47,40 @@ bool BMX_1_exists = false;
 bool BMX_2_exists = false;
 byte BMX_1_type=BMX_TYPE_UNKNOWN;
 byte BMX_2_type=BMX_TYPE_UNKNOWN;
+const char *bmxtype[] = {"UNKN", "BMP280", "BME280", "BMP388", "BMP390"};
+
+/*
+ * ======================================================================================================================
+ *  HTU21D-F - I2C - Humidity & Temp Sensor
+ * ======================================================================================================================
+ */
+Adafruit_HTU21DF htu = Adafruit_HTU21DF();
+bool HTU21DF_exists = false;
+
+/*
+ * ======================================================================================================================
+ *  MCP9808 - I2C - Temperature sensor
+ * 
+ * I2C Address is:  0011,A2,A1,A0
+ *                  0011000 = 0x18  where A2,1,0 = 0 MCP9808_I2CADDR_DEFAULT  
+ *                  0011001 = 0x19  where A0 = 1
+ *                  0011001 = 0x1A  where A1 = 1
+ *                  0011011 = 0x1B  where A0 & A1 = 1
+ * ======================================================================================================================
+ */
+#define MCP_ADDRESS_1     0x18        // Default
+#define MCP_ADDRESS_2     0x19        // A0 set high, VDD
+#define MCP_ADDRESS_3     0x1A        // A1 set high, VDD
+#define MCP_ADDRESS_4     0x1B        // A0 & A1 set high, VDD
+
+Adafruit_MCP9808 mcp1;
+Adafruit_MCP9808 mcp2;
+Adafruit_MCP9808 mcp3;
+Adafruit_MCP9808 mcp4;
+bool MCP_1_exists = false;
+bool MCP_2_exists = false;
+bool MCP_3_exists = false;
+bool MCP_4_exists = false;
 
 /*
  * ======================================================================================================================
@@ -62,14 +101,6 @@ bool SHT_2_exists = false;
  */
 #define HIH8000_ADDRESS   0x27
 bool HIH8_exists = false;
-
-/*
- * ======================================================================================================================
- *  HTU21D-F - I2C - Humidity & Temp Sensor
- * ======================================================================================================================
- */
-Adafruit_HTU21DF htu = Adafruit_HTU21DF();
-bool HTU21DF_exists = false;
 
 /*
  * ======================================================================================================================
@@ -103,19 +134,11 @@ bool VEML7700_exists = false;
 
 /*
  * ======================================================================================================================
- *  MCP9808 - I2C - Temperature sensor
- * 
- * I2C Address is:  0011,A2,A1,A0
- *                  0011000 = 0x18  where A2,1,0 = 0 MCP9808_I2CADDR_DEFAULT  
- *                  0011001 = 0x19  where A0 = 1
+ *  B_LUX_V30B - I2C - Lux Sensor
  * ======================================================================================================================
  */
-#define MCP_ADDRESS_1     0x18
-#define MCP_ADDRESS_2     0x19        // A0 set high, VDD
-Adafruit_MCP9808 mcp1;
-Adafruit_MCP9808 mcp2;
-bool MCP_1_exists = false;
-bool MCP_2_exists = false;
+#define BLX_ADDRESS   0x4A
+bool BLX_exists = false;
 
 /*
  * ======================================================================================================================
@@ -166,6 +189,68 @@ PM25AQI_OBS_STR pm25aqi_obs;
 #define PM25AQI_ADDRESS   0x12
 Adafruit_PM25AQI pmaq = Adafruit_PM25AQI();
 bool PM25AQI_exists = false;
+
+/*
+ * ======================================================================================================================
+ *  HDC302x - I2C - Precision Temperature & Humidity Sensor
+ *    Note HDC uses the same I2C Address as SHT. To avoid conflict we are using 0x46 as hdc1 and 0x47 and hdc2 
+ *    manufacturerID = 0x3000  -- uint16_t Adafruit_HDC302x::readManufacturerID()
+ * ======================================================================================================================
+ */
+#define HDC_ADDRESS_1     0x46        // A1=1, A0=0  Need to solder jumper
+#define HDC_ADDRESS_2     0x47        // A1=1, A0=1  Need to solder jumper
+#define HDC_ADDRESS_3     0x44        // A1=0, A0=0  Not used, Default setting from vendor
+#define HDC_ADDRESS_4     0x45        // A1=0, A0=1  Not used
+
+Adafruit_HDC302x hdc1;
+Adafruit_HDC302x hdc2;
+bool HDC_1_exists = false;
+bool HDC_2_exists = false;
+
+/*
+ * ======================================================================================================================
+ *  LPS35HW - I2C - Pressure and Temperature
+ *    Chip ID = 0xB1,  Library init checks this.
+ * ======================================================================================================================
+ */
+#define LPS_ADDRESS_1     0x5D        // Default
+#define LPS_ADDRESS_2     0x5C        // With jumper
+
+Adafruit_LPS35HW lps1;
+Adafruit_LPS35HW lps2;
+
+bool LPS_1_exists = false;
+bool LPS_2_exists = false;
+
+/*
+ * ======================================================================================================================
+ *  Tinovi Leaf Wetness
+ *    Chip ID = 0x61,  Library init checks this.
+ * ======================================================================================================================
+ */
+#define TLW_ADDRESS     0x61
+LeafSens tlw;
+bool TLW_exists = false;
+
+/*
+ * ======================================================================================================================
+ *  Tinovi MultiLevel Soil Moisture (4 Soil and 2 Temperature)
+ *    Chip ID = 0x63,  Library init checks this.
+ * ======================================================================================================================
+ */
+#define TSM_ADDRESS     0x63
+SVCS3 tsm;
+bool TSM_exists = false;
+
+/*
+ * ======================================================================================================================
+ *  Tinovi MultiLevel Soil Moisture (4 Soil and 2 Temperature)
+ *    Chip ID = 0x63,  Library init checks this.
+ * ======================================================================================================================
+ */
+#define TMSM_ADDRESS    0x65
+SVMULTI tmsm;
+bool TMSM_exists = false;
 
 /* 
  *=======================================================================================================================
@@ -283,7 +368,7 @@ byte get_Bosch_ChipID (byte address) {
  *=======================================================================================================================
  */
 void bmx_initialize() {
-  Output("BMX:INIT");
+  Output(F("BMX:INIT"));
   
   // 1st Bosch Sensor - Need to see which (BMP, BME, BM3) is plugged in
   BMX_1_chip_id = get_Bosch_ChipID(BMX_ADDRESS_1);
@@ -412,7 +497,7 @@ void bmx_initialize() {
  *=======================================================================================================================
  */
 void htu21d_initialize() {
-  Output("HTU21D:INIT");
+  Output(F("HTU21D:INIT"));
   
   // HTU21DF Humidity & Temp Sensor (I2C ADDRESS = 0x40)
   if (!htu.begin()) {
@@ -433,7 +518,7 @@ void htu21d_initialize() {
  *=======================================================================================================================
  */
 void mcp9808_initialize() {
-  Output("MCP9808:INIT");
+  Output(F("MCP9808:INIT"));
   
   // 1st MCP9808 Precision I2C Temperature Sensor (I2C ADDRESS = 0x18)
   mcp1 = Adafruit_MCP9808();
@@ -460,6 +545,32 @@ void mcp9808_initialize() {
     msgp = (char *) "MCP2 OK";
   }
   Output (msgp);
+
+  // 3rd MCP9808 Precision I2C Temperature Sensor (I2C ADDRESS = 0x20)
+  mcp3 = Adafruit_MCP9808();
+  if (!mcp3.begin(MCP_ADDRESS_3)) {
+    msgp = (char *) "MCP3 NF";
+    MCP_3_exists = false;
+    SystemStatusBits |= SSB_MCP_3;  // Turn On Bit
+  }
+  else {
+    MCP_3_exists = true;
+    msgp = (char *) "MCP3 OK";
+  }
+  Output (msgp);
+
+  // 4rd MCP9808 Precision I2C Temperature Sensor (I2C ADDRESS = 0x21)
+  mcp4 = Adafruit_MCP9808();
+  if (!mcp4.begin(MCP_ADDRESS_4)) {
+    msgp = (char *) "MCP4 NF";
+    MCP_4_exists = false;
+    // SystemStatusBits |= SSB_MCP_4;  // Turn On Bit
+  }
+  else {
+    MCP_4_exists = true;
+    msgp = (char *) "MCP4 OK";
+  }
+  Output (msgp);
 }
 
 /* 
@@ -468,7 +579,7 @@ void mcp9808_initialize() {
  *=======================================================================================================================
  */
 void sht_initialize() {
-  Output("SHT:INIT");
+  Output(F("SHT:INIT"));
   
   // 1st SHT31 I2C Temperature/Humidity Sensor (I2C ADDRESS = 0x44)
   sht1 = Adafruit_SHT31();
@@ -503,7 +614,7 @@ void sht_initialize() {
  *=======================================================================================================================
  */
 void hih8_initialize() {
-  Output("HIH8:INIT");
+  Output(F("HIH8:INIT"));
 
   if (I2C_Device_Exist(HIH8000_ADDRESS)) {
     HIH8_exists = true;
@@ -571,13 +682,13 @@ bool hih8_getTempHumid(float *t, float *h) {
  *=======================================================================================================================
  */
 void wbt_initialize() {
-  Output("WBT:INIT");
+  Output(F("WBT:INIT"));
   if (MCP_1_exists && SHT_1_exists) {
     WBT_exists = true;
-    Output ("WBT:OK");
+    Output (F("WBT:OK"));
   }
   else {
-    Output ("WBT:NF");
+    Output (F("WBT:NF"));
   }
 }
 
@@ -606,7 +717,7 @@ double wbt_calculate(double T, double RH) {
     return (-999.9);
   }
 
-  // Output("WBT:CALC");
+  // Output(F("WBT:CALC"));
 
   // Equation components
   double term1 = T * atan(0.151977 * sqrt(RH + 8.313659));
@@ -628,13 +739,13 @@ double wbt_calculate(double T, double RH) {
  *=======================================================================================================================
  */
 void hi_initialize() {
-  Output("HI:INIT");
+  Output(F("HI:INIT"));
   if (MCP_1_exists && SHT_1_exists) {
     HI_exists = true;
-    Output ("HI:OK");
+    Output (F("HI:OK"));
   }
   else {
-    Output ("HI:NF");
+    Output (F("HI:NF"));
   }
 }
 
@@ -721,29 +832,34 @@ float hi_calculate(float T, float RH) {
   return (HI);
 }
 
-
 /* 
  *=======================================================================================================================
- * wbgt_initialize() - Wet Bulb Temperature
+ * wbgt_initialize() - Wet Bulb Globe Temperature
  *=======================================================================================================================
  */
 void wbgt_initialize() {
-  Output("WBGT:INIT");
+  Output(F("WBGT:INIT"));
   if (MCP_1_exists && SHT_1_exists) {
     WBGT_exists = true;
-    Output ("WBGT:OK");
+    if (MCP_3_exists) {
+      Output (F("WBGT:OK w/Globe"));
+    }
+    else {
+      Output (F("WBGT:OK wo/Globe"));
+    }
   }
   else {
-    Output ("WBGT:NF");
+    Output (F("WBGT:NF"));
   }
 }
 
 /* 
  *=======================================================================================================================
- * wbgt_calculate() - Compute Web Bulb Globe Temperature
+ * wbgt_using_hi() - Compute Web Bulb Globe Temperature using Heat Index
  *=======================================================================================================================
  */
-double wbgt_calculate(double HIc) {
+double wbgt_using_hi(double HIc) {
+
   if (HIc == -999.9) {
     return (-999.9);
   }
@@ -759,44 +875,19 @@ double wbgt_calculate(double HIc) {
 
 /* 
  *=======================================================================================================================
- * wbgt_calculate_opt2() - Compute Web Bulb Globe Temperature
+ * wbgt_using_wbt() - Compute Web Bulb Globe Temperature using web bulb temperature
  *=======================================================================================================================
  */
-double wbgt_calculate_opt2(double Tc, double HIc) {
-  if ((Tc == -999.9) || (HIc == -999.9)) {
-    return (-999.9);
-  }
+double wbgt_using_wbt(double Ta, double Tg, double Tw) {
+  // Ta = mcp1 temp
+  // Tg = mcp3 temp
+  // Tw = wbt_calculate(Ta, RH)
 
-  // Constants for the approximation
-  const float a = 0.7;
-  const float b = 0.2;
-  const float c = 0.1;
- 
-  // Using temperature as a proxy for dry bulb temperature (Td)
-  float Td = Tc * 9.0 / 5.0 + 32.0;
- 
-  // Using heat index as a proxy for wet bulb temperature (Tw)
-  float Tw = HIc * 9.0 / 5.0 + 32.0;
+  double wbgt = (0.7 * Tw) + (0.2 * Tg) + (0.1 * Ta);  // This will be Celsius
 
-  // Assuming globe temperature (Tg) as average of temperature and heat index
-  float Tg = (Td + Tw) / 2;
+  wbgt = (isnan(wbgt) || (wbgt < QC_MIN_T)  || (wbgt >QC_MAX_T))  ? QC_ERR_T  : wbgt;
 
-  // Calculate WBGT using simplified formula
-  float WBGT = a * Tw + b * Tg + c * Td;
-
-  /*
-  sprintf (msgbuf, "Td[%d.%d] Tw[%d.%d] Tg[%d.%d] WBGT[%d.%d]", 
-    (int)Td, (int)(Td*100)%100, 
-    (int)Tw, (int)(Tw*100)%100,
-    (int)Tg, (int)(Tg*100)%100, 
-    (int)WBGT, (int)(WBGT*100)%100
-    );
-  Output (msgbuf);
-  */
-
-  // Convert Heat Index from Fahrenheit to Celsius
-  WBGT = (WBGT - 32.0) * 5.0 / 9.0;
-  return (WBGT);
+  return (wbgt);
 }
 
 /* 
@@ -831,7 +922,7 @@ double wbgt_calculate_opt2(double Tc, double HIc) {
  *=======================================================================================================================
  */
 void lux_initialize() {
-  Output("LUX:INIT");
+  Output(F("LUX:INIT"));
 
   if (veml.begin()) {
     VEML7700_exists = true;
@@ -840,9 +931,103 @@ void lux_initialize() {
   else {
     msgp = (char *) "LUX NF";
     VEML7700_exists = false;
-    SystemStatusBits |= SSB_LUX;  // Turn On Bit
+    SystemStatusBits |= SSB_VLX;  // Turn On Bit
   }
   Output (msgp);
+}
+
+/* 
+ *=======================================================================================================================
+ * blx_getconfig() - DFRobot_B_LUX_V30B sensor config - 
+ *     Value returned keeps changing same with DF Robot Arduino library, WHY?
+ *=======================================================================================================================
+ */
+/*
+bool blx_getconfig() {
+  uint8_t data; // Array to hold the 4 bytes of data
+
+  Wire.beginTransmission(BLUX30_ADDRESS);
+  Wire.write(0x04); // Point to the config register address
+  Wire.endTransmission();  // false tells the I2C master to not release the bus between the write and read operations
+
+  // Request 4 bytes from the device
+  // The Wire library automatically handles the toggling of the least significant bit (LSB) of the address for reads.
+  Wire.requestFrom(BLUX30_ADDRESS, 1);
+  if (Wire.available() == 1) { // Check if 4 bytes were received
+    data = Wire.read(); // Read each byte into the array
+
+    sprintf (msgbuf, "BLUX30 CFGREG %0X", data);
+    Output (msgbuf);
+    return(true);
+
+  } else {
+    return (false);
+  }
+}
+*/
+
+/* 
+ *=======================================================================================================================
+ * blx_initialize() - DFRobot_B_LUX_V30B sensor
+ *=======================================================================================================================
+ */
+void blx_initialize() {
+  Output(F("BLX:INIT"));
+
+  if (I2C_Device_Exist(BLX_ADDRESS)) {
+    BLX_exists = true;
+    msgp = (char *) "BLX:OK";
+  }
+  else {
+    BLX_exists = false;
+    msgp = (char *) "BLX:NF";
+    SystemStatusBits |= SSB_BLX;  // Turn On Bit
+  }
+  Output (msgp);
+}
+
+/* 
+ *=======================================================================================================================
+ * blx_takereading() - DFRobot_B_LUX_V30B sensor reading
+ *=======================================================================================================================
+ */
+float blx_takereading() {
+  float lux;
+  uint32_t raw;
+  uint8_t data[4]; // Array to hold the 4 bytes of data
+  const unsigned long timeout = 1000; // Timeout in milliseconds
+  unsigned long startTime;
+
+  Wire.beginTransmission(BLX_ADDRESS);
+  Wire.write(0x00); // Point to the data register address
+  Wire.endTransmission(false); // false tells the I2C master to not release the bus between the write and read operations
+
+  // Request 4 bytes from the device
+  Wire.requestFrom(BLX_ADDRESS, 4);
+
+  startTime = millis(); // Record the start time
+  while (Wire.available() < 4) { // Wait for all bytes to be received
+    if (millis() - startTime > timeout) { // Check if timeout has been reached
+      return -1; // Return error code if timeout occurs
+    }
+    delay(1); // Short delay to prevent busy-waiting
+  }
+
+  for (int i = 0; i < 4; i++) {
+    data[i] = Wire.read(); // Read each byte into the array
+  }
+
+  raw = data[3];
+  raw = (raw<<8)|data[2];
+  raw = (raw<<8)|data[1];
+  raw = (raw<<8)|data[0];
+
+  lux = ((float)raw*1.4) / 1000;  // Is 1.4 scaling multiplier based on the sensor's internal calibration ?
+                                    // Is divide by 1000 converting from millilux ?
+
+  // sprintf (msgbuf, "BLUX30 LUX %f RAW %lu\n", lux, raw);
+  // Output (msgbuf);
+  return(lux);
 }
 
 /* 
@@ -865,7 +1050,7 @@ void pm25aqi_clear() {
  *=======================================================================================================================
  */
 void pm25aqi_initialize() {
-  Output("PM25AQI:INIT");
+  Output(F("PM25AQI:INIT"));
   Wire.beginTransmission(PM25AQI_ADDRESS);
   if (Wire.endTransmission()) {
     msgp = (char *) "PM:NF";
@@ -907,9 +1092,155 @@ void pm25aqi_TakeReading() {
     else {
       SystemStatusBits &= ~SSB_PM25AQI; // Turn Off Bit
       PM25AQI_exists = false;
-      Output ("PM OFFLINE");
+      Output (F("PM OFFLINE"));
     }
   }
+}
+
+/* 
+ *=======================================================================================================================
+ * hdc_initialize() - HDC3002c sensor initialize
+ *=======================================================================================================================
+ */
+void hdc_initialize() {
+  Output(F("HDC:INIT"));
+  
+  // 1st HDC I2C Temperature/Humidity Sensor (I2C ADDRESS = 0x44)
+  hdc1 = Adafruit_HDC302x();
+  if (!hdc1.begin(HDC_ADDRESS_1, &Wire)) {
+    msgp = (char *) "HDC1 NF";
+    HDC_1_exists = false;
+    SystemStatusBits |= SSB_HDC_1;  // Turn On Bit
+  }
+  else {
+    double t,h;
+    hdc1.readTemperatureHumidityOnDemand(t, h, TRIGGERMODE_LP0);
+    HDC_1_exists = true;
+    msgp = (char *) "HDC1 OK";
+  }
+  Output (msgp);
+
+  // 2nd HDC I2C Temperature/Humidity Sensor (I2C ADDRESS = 0x45)
+  hdc2 = Adafruit_HDC302x();
+  if (!hdc2.begin(HDC_ADDRESS_2, &Wire)) {
+    msgp = (char *) "HDC2 NF";
+    HDC_2_exists = false;
+    SystemStatusBits |= SSB_HDC_2;  // Turn On Bit
+  }
+  else {
+    double t,h;
+    hdc2.readTemperatureHumidityOnDemand(t, h, TRIGGERMODE_LP0);
+    HDC_2_exists = true;
+    msgp = (char *) "HDC2 OK";
+  }
+  Output (msgp);
+}
+
+/* 
+ *=======================================================================================================================
+ * lps_initialize() - LPS35HW Pressure and Temperature initialize
+ *=======================================================================================================================
+ */
+void lps_initialize() {
+  Output(F("LPS:INIT"));
+  
+  // 1st LPS I2C Pressure/Temperature Sensor (I2C ADDRESS = 0x5D)
+  lps1 = Adafruit_LPS35HW();
+  if (!lps1.begin_I2C(LPS_ADDRESS_1, &Wire)) {
+    msgp = (char *) "LPS1 NF";
+    LPS_1_exists = false;
+    SystemStatusBits |= SSB_LPS_1;  // Turn On Bit
+  }
+  else {
+    [[maybe_unused]] float t,p;
+    t = lps1.readTemperature();
+    p = lps1.readPressure();
+    LPS_1_exists = true;
+    msgp = (char *) "LPS1 OK";
+  }
+  Output (msgp);
+
+  // 2nd LPS I2C Pressure/Temperature Sensor (I2C ADDRESS = 0x5C)
+  lps2 = Adafruit_LPS35HW();
+  if (!lps2.begin_I2C(LPS_ADDRESS_2, &Wire)) {
+    msgp = (char *) "LPS2 NF";
+    LPS_2_exists = false;
+    SystemStatusBits |= SSB_LPS_2;  // Turn On Bit
+  }
+  else {
+    [[maybe_unused]] float t,p;
+    t = lps2.readTemperature();
+    p = lps2.readPressure();
+    LPS_2_exists = true;
+    msgp = (char *) "LPS2 OK";
+  }
+  Output (msgp);
+}
+
+/* 
+ *=======================================================================================================================
+ * tlw_initialize() -  Tinovi Leaf Wetness initialize
+ *=======================================================================================================================
+ */
+void tlw_initialize() {
+  Output(F("TLW:INIT"));
+  
+  // Tinovi Leaf Wetness initialize (I2C ADDRESS = 0x61)
+  if (!I2C_Device_Exist(TLW_ADDRESS)) { 
+    msgp = (char *) "TLW NF";
+    TLW_exists = false;
+  }
+  else {
+    tlw.init(TLW_ADDRESS);
+    msgp = (char *) "TLW OK";
+    TLW_exists = true;
+    SystemStatusBits |= SSB_TLW;  // Turn On Bit
+  }
+  Output (msgp);
+}
+
+/* 
+ *=======================================================================================================================
+ * tsm_initialize() -  Tinovi Soil Moisture initialize
+ *=======================================================================================================================
+ */
+void tsm_initialize() {
+  Output(F("TSM:INIT"));
+  
+  // Tinovi Soil Moisture initialize (I2C ADDRESS = 0x63)
+  if (!I2C_Device_Exist(TSM_ADDRESS)) { 
+    msgp = (char *) "TSM NF";
+    TSM_exists = false;
+  }
+  else {
+    tsm.init(TSM_ADDRESS);
+    msgp = (char *) "TSM OK";
+    TSM_exists = true;
+    SystemStatusBits |= SSB_TSM;  // Turn On Bit
+  }
+  Output (msgp);
+}
+
+/* 
+ *=======================================================================================================================
+ * tmsm_initialize() -  Tinovi MultiLevel Soil Moisture initialize
+ *=======================================================================================================================
+ */
+void tmsm_initialize() {
+  Output(F("TMSM:INIT"));
+  
+  // Tinovi MultiLevel Soil Moisture initialize (I2C ADDRESS = 0x65)
+  if (!I2C_Device_Exist(TMSM_ADDRESS)) { 
+    msgp = (char *) "TMSM NF";
+    TMSM_exists = false;
+  }
+  else {
+    tmsm.init(TMSM_ADDRESS);
+    msgp = (char *) "TMSM OK";
+    TMSM_exists = true;
+    SystemStatusBits |= SSB_TMSM;  // Turn On Bit
+  }
+  Output (msgp);
 }
 
 /*
@@ -926,21 +1257,21 @@ void I2C_Check_Sensors() {
       if (BMX_1_chip_id == BME280_BMP390_CHIP_ID) {
         if (bmp1.begin(BMX_ADDRESS_1)) { 
           BMX_1_exists = true;
-          Output ("BMP1 ONLINE");
+          Output (F("BMP1 ONLINE"));
           SystemStatusBits &= ~SSB_BMX_1; // Turn Off Bit
         } 
       }
       else if (BMX_1_chip_id == BME280_BMP390_CHIP_ID) {
         if (bme1.begin(BMX_ADDRESS_1)) { 
           BMX_1_exists = true;
-          Output ("BME1 ONLINE");
+          Output (F("BME1 ONLINE"));
           SystemStatusBits &= ~SSB_BMX_1; // Turn Off Bit
         }          
       }
       else {
         if (bm31.begin_I2C(BMX_ADDRESS_1)) { 
           BMX_1_exists = true;
-          Output ("BM31 ONLINE");
+          Output (F("BM31 ONLINE"));
           SystemStatusBits &= ~SSB_BMX_1; // Turn Off Bit
         }                  
       }      
@@ -950,7 +1281,7 @@ void I2C_Check_Sensors() {
     // Sensor offline but our state has it online
     if (BMX_1_exists == true) {
       BMX_1_exists = false;
-      Output ("BMX1 OFFLINE");
+      Output (F("BMX1 OFFLINE"));
       SystemStatusBits |= SSB_BMX_1;  // Turn On Bit 
     }    
   }
@@ -962,21 +1293,21 @@ void I2C_Check_Sensors() {
       if (BMX_2_chip_id == BME280_BMP390_CHIP_ID) {
         if (bmp2.begin(BMX_ADDRESS_2)) { 
           BMX_2_exists = true;
-          Output ("BMP2 ONLINE");
+          Output (F("BMP2 ONLINE"));
           SystemStatusBits &= ~SSB_BMX_2; // Turn Off Bit
         } 
       }
       else if (BMX_2_chip_id == BME280_BMP390_CHIP_ID) {
         if (bme2.begin(BMX_ADDRESS_2)) { 
           BMX_2_exists = true;
-          Output ("BME2 ONLINE");
+          Output (F("BME2 ONLINE"));
           SystemStatusBits &= ~SSB_BMX_2; // Turn Off Bit
         }          
       }
       else {
          if (bm32.begin_I2C(BMX_ADDRESS_2)) { 
           BMX_2_exists = true;
-          Output ("BM32 ONLINE");
+          Output (F("BM32 ONLINE"));
           SystemStatusBits &= ~SSB_BMX_2; // Turn Off Bit
         }                         
       }     
@@ -986,7 +1317,7 @@ void I2C_Check_Sensors() {
     // Sensor offline but we our state has it online
     if (BMX_2_exists == true) {
       BMX_2_exists = false;
-      Output ("BMX2 OFFLINE");
+      Output (F("BMX2 OFFLINE"));
       SystemStatusBits |= SSB_BMX_2;  // Turn On Bit 
     }    
   }
@@ -998,7 +1329,7 @@ void I2C_Check_Sensors() {
       // See if we can bring sensor online
       if (htu.begin()) {
         HTU21DF_exists = true;
-        Output ("HTU ONLINE");
+        Output (F("HTU ONLINE"));
         SystemStatusBits &= ~SSB_HTU21DF; // Turn Off Bit
       }
     }
@@ -1007,7 +1338,7 @@ void I2C_Check_Sensors() {
     // Sensor offline but we our state has it online
     if (HTU21DF_exists == true) {
       HTU21DF_exists = false;
-      Output ("HTU OFFLINE");
+      Output (F("HTU OFFLINE"));
       SystemStatusBits |= SSB_HTU21DF;  // Turn On Bit
     }   
   }
@@ -1020,7 +1351,7 @@ void I2C_Check_Sensors() {
       // See if we can bring sensor online
       if (mcp1.begin(MCP_ADDRESS_1)) {
         MCP_1_exists = true;
-        Output ("MCP ONLINE");
+        Output (F("MCP ONLINE"));
         SystemStatusBits &= ~SSB_MCP_1; // Turn Off Bit
       }
     }
@@ -1029,7 +1360,7 @@ void I2C_Check_Sensors() {
     // Sensor offline but we our state has it online
     if (MCP_1_exists == true) {
       MCP_1_exists = false;
-      Output ("MCP OFFLINE");
+      Output (F("MCP OFFLINE"));
       SystemStatusBits |= SSB_MCP_1;  // Turn On Bit
     }   
   }
@@ -1040,7 +1371,7 @@ void I2C_Check_Sensors() {
     // Sensor online but our state had it offline
     if (AS5600_exists == false) {
       AS5600_exists = true;
-      Output ("WD ONLINE");
+      Output (F("WD ONLINE"));
       SystemStatusBits &= ~SSB_AS5600; // Turn Off Bit
     }
   }
@@ -1048,7 +1379,7 @@ void I2C_Check_Sensors() {
     // Sensor offline but we our state has it online
     if (AS5600_exists == true) {
       AS5600_exists = false;
-      Output ("WD OFFLINE");
+      Output (F("WD OFFLINE"));
       SystemStatusBits |= SSB_AS5600;  // Turn On Bit
     }   
   }
@@ -1060,8 +1391,8 @@ void I2C_Check_Sensors() {
       // See if we can bring sensore online
       if (veml.begin()) {
         VEML7700_exists = true;
-        Output ("LUX ONLINE");
-        SystemStatusBits &= ~SSB_LUX; // Turn Off Bit
+        Output (F("LUX ONLINE"));
+        SystemStatusBits &= ~SSB_VLX; // Turn Off Bit
       }
     }
   }
@@ -1069,8 +1400,8 @@ void I2C_Check_Sensors() {
     // Sensor offline but we our state has it online
     if (VEML7700_exists == true) {
       VEML7700_exists = false;
-      Output ("LUX OFFLINE");
-      SystemStatusBits |= SSB_LUX;  // Turn On Bit
+      Output (F("LUX OFFLINE"));
+      SystemStatusBits |= SSB_VLX;  // Turn On Bit
     }   
   }
 }

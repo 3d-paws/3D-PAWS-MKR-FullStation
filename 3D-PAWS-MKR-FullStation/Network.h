@@ -89,13 +89,13 @@ unsigned long GetCellEpochTime()
   // Do the below request in case Connection Handler is not current with true connection state.
   int NetworkAccessStatus = nb_gsm.isAccessAlive();  // Check network access status
   if (!NetworkAccessStatus) {
-    Output("GNWT:NO ACCESS");
+    Output(F("GNWT:NO ACCESS"));
     return 0;
   }
 
   MODEM.send("AT+CCLK?");
   if (MODEM.waitForResponse(100, &response) != 1) {
-    Output("GNWT:TIMEOUT");
+    Output(F("GNWT:TIMEOUT"));
     return 0;
   }
 
@@ -106,7 +106,7 @@ unsigned long GetCellEpochTime()
   Serial_writeln(s);
 
   if (response.length() != 29) {
-    Output("GNWT:WRONG LEN");
+    Output(F("GNWT:WRONG LEN"));
     return 0;    
   }
 
@@ -157,16 +157,16 @@ unsigned long GetCellEpochTime()
      }
     }
     else {
-      Output("GNWT:Delta Not Added");
+      Output(F("GNWT:Delta Not Added"));
     }
 
     // https://www.unixtimestamp.com/
     if (result < 1664604000) { // Chose a time that is in the past. Sat Oct 01 2022 06:00:00 GMT+0000
-      Output("GNWT:<BAD DATE");
+      Output(F("GNWT:<BAD DATE"));
       return(0);
     }
     if (result > 1980223200) { // Chose a time that is in the future. Fri Oct 01 2032 06:00:00 GMT+0000
-      Output("GNWT:>BAD DATE");
+      Output(F("GNWT:>BAD DATE"));
       return(0);     
     }
     sprintf (Buffer32Bytes, "GNWT:OK[%u]", result);
@@ -174,7 +174,7 @@ unsigned long GetCellEpochTime()
     return result;
   }
   else {
-    Output("GNWT:BAD FORMAT");
+    Output(F("GNWT:BAD FORMAT"));
     return (0);
   }
 }
@@ -260,7 +260,7 @@ void PrintModemFW() {
   
   MODEM.send("ATI9");
   if (MODEM.waitForResponse(100, &response) != 1) {
-    Output("PMFW:TIMEOUT");
+    Output(F("PMFW:TIMEOUT"));
     return;
   }
   response.toCharArray(ModemFirmwareVersion, 32);
@@ -292,7 +292,7 @@ bool WaitForNetworkConnection(int seconds)
  * ======================================================================================================================
  */
 void onNetworkConnect() {
-  Output("NW:Connect");
+  Output(F("NW:Connect"));
   PrintCurrentCarrier();
 }
 
@@ -302,7 +302,7 @@ void onNetworkConnect() {
  * ======================================================================================================================
  */
 void onNetworkDisconnect() {
-  Output("NW:Disconnect");
+  Output(F("NW:Disconnect"));
 }
 
 /*
@@ -311,7 +311,7 @@ void onNetworkDisconnect() {
  * ======================================================================================================================
  */
 void onNetworkError() {
-  Output("NW:Error!");
+  Output(F("NW:Error!"));
   conMan.connect(); // Try some modem recovery, so next call to check() we will run init() and start connection process all over
   PrintModemIMEI(); // Ask the modem something to see if it is alive
 }

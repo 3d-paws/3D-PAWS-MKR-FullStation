@@ -43,7 +43,7 @@ void StationMonitor() {
   }
 
   sprintf (Buffer32Bytes, "R:%02d,S:%02d,%s %X",
-    raingauge_interrupt_count,
+    raingauge1_interrupt_count,
     anemometer_interrupt_count,
     Buffer16Bytes,
     SystemStatusBits);
@@ -76,7 +76,7 @@ void StationMonitor() {
           bmx_temp = bm31.readTemperature();
        break;
        default:
-          Output ("BMX:WTF"); // This should not happen.
+          Output (F("BMX:WTF")); // This should not happen.
        break;
     }
     sprintf (Buffer32Bytes, "P:%d.%02d T:%d.%02d", 

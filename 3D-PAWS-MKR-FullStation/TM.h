@@ -78,7 +78,7 @@ void rtc_initialize() {
   }
  
   if (!I2C_Device_Exist(0x68)) {
-    Output("RTC:I2C NF ERR");
+    Output(F("RTC:I2C NF ERR"));
     SystemStatusBits |= SSB_RTC; // Turn on Bit
     delay (5000);
     return;
@@ -93,17 +93,17 @@ void rtc_initialize() {
   // Do a validation check on the year. 
   // Asumption is: If RTC not set, it will not have the current year.
   
-  if ((now.year() >= 2023) && (now.year() <= 2031)) {
+  if ((now.year() >= 2025) && (now.year() <= 2035)) {
     RTC_valid = true;
-    Output("RTC:VALID");
+    Output(F("RTC:VALID"));
     
     now = rtc.now();
     stc.setEpoch(now.unixtime());
     STC_valid = true;
-    Output("STC:VALID");
+    Output(F("STC:VALID"));
   }
   else {
-    Output ("RTC:TIME ERR");
+    Output (F("RTC:TIME ERR"));
   }
 }
 
@@ -117,46 +117,53 @@ void rtc_initialize() {
 void NetworkTimeManagement() {
 
     if (RTC_exists) {
+      
       // We have a RTC and We have connected to the Cell network at some point
-    
       if (!RTC_valid || (LastTimeUpdate == 0)) {
-        // Set Uninitialized RTC from Cell Network.
-        // Also since the RTC was invalid we don't have a valid system clock. We need to set that too.
-        unsigned long networktime = GetCellEpochTime(); // This is UTC time.
-        if (networktime) {
-          sprintf (Buffer32Bytes, "NW:EPOCH %u", networktime);
-          Serial_writeln(Buffer32Bytes);
+        if (ConnectionState == NetworkConnectionState::CONNECTED) {
+          // Set Uninitialized RTC from Cell Network.
+          // Also since the RTC was invalid we don't have a valid system clock. We need to set that too.
+          unsigned long networktime = GetCellEpochTime(); // This is UTC time.
+          if (networktime) {
+            // We have network because we received time back
+            sprintf (Buffer32Bytes, "NW:EPOCH %u", networktime);
+            Serial_writeln(Buffer32Bytes);
 
-          // Set Real Time Clock
-          DateTime dt_networktime = DateTime(networktime);
-          if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END)) {
-            rtc.adjust(dt_networktime);
-            Output("RTC:SET");
-            rtc_timestamp();
-            sprintf (msgbuf, "%sR", timestamp);
-            Output (msgbuf);
-            RTC_valid = true;
+            // Set Real Time Clock
+            DateTime dt_networktime = DateTime(networktime);
+            if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END)) {
+              rtc.adjust(dt_networktime);
+              Output(F("RTC:SET"));
+              rtc_timestamp();
+              sprintf (msgbuf, "%sR", timestamp);
+              Output (msgbuf);
+              RTC_valid = true;
 
-            // Set System Time Clock
-            stc.setEpoch(networktime);
-            Output("STC:SET");
-            stc_timestamp();
-            sprintf (msgbuf, "%sS", timestamp);
-            Output (msgbuf);
+              // Set System Time Clock
+              stc.setEpoch(networktime);
+              Output(F("STC:SET"));
+              stc_timestamp();
+              sprintf (msgbuf, "%sS", timestamp);
+              Output (msgbuf);
           
-            STC_valid = true;  // Once this is set we can start taking observations. Because know the time.
+              STC_valid = true;  // Once this is set we can start taking observations. Because know the time.
         
-            LastTimeUpdate = networktime;
+              LastTimeUpdate = networktime;
+            }
+            else {
+              Output(F("RTC:NOT SET-BAD YR"));
+            }
           }
           else {
-            Output("RTC:NOT SET-BAD YR");
+            if (RTC_valid) {
+              Output(F("RTC:OK NWTM:BAD"));
+            }
+            else {
+              Output(F("RTC:BAD NWTM:BAD"));
+            }
           }
         }
-        else {
-          Output("RTC:NOT SET");
-        }
       }
-
       // We have a valid system clock and real time clock, diff if we need to sync ntc to the rtc
       else if ((stc.getEpoch() - LastTimeUpdate) >= 2*3600) { // 2hrs    
         unsigned long networktime = GetCellEpochTime(); // This is UTC time. 
@@ -165,7 +172,7 @@ void NetworkTimeManagement() {
           DateTime dt_networktime = DateTime(networktime);
           if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END)) {
             rtc.adjust(dt_networktime);
-            Output("RTC:UPDATED");
+            Output(F("RTC:UPDATED"));
             rtc_timestamp();
             sprintf (msgbuf, "%sR", timestamp);
             Output (msgbuf);
@@ -174,16 +181,16 @@ void NetworkTimeManagement() {
 
             // Set System Time Clock
             stc.setEpoch(networktime);
-            Output("STC:UPDATED");
+            Output(F("STC:UPDATED"));
           
             STC_valid = true; // just because   
           }
           else {
-            Output("RTC:NOT UPDATED-BAD YR");           
+            Output(F("RTC:NOT UPDATED-BAD YR"));           
           }             
         }
         else {
-          Output("RTC:NOT UPDATED");
+          Output(F("RTC:NOT UPDATED"));
         }
         // If the network clock was good or bad set up to do another stc update in 2 hours
         LastTimeUpdate = stc.getEpoch();
@@ -201,7 +208,7 @@ void NetworkTimeManagement() {
           if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END)) {
             // Set System Time Clock
             stc.setEpoch(networktime);
-            Output("STC:SET");
+            Output(F("STC:SET"));
             stc_timestamp();
             sprintf (msgbuf, "%sS", timestamp);
             Output (msgbuf);
@@ -229,18 +236,18 @@ void NetworkTimeManagement() {
           if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END)) {
             // Set System Time Clock
             stc.setEpoch(networktime);
-            Output("STC:UPDATED");
+            Output(F("STC:UPDATED"));
             STC_valid = true; // just because
                   
             LastTimeUpdate = networktime; 
           }
           else {
-            Output("STC:UPD BAD-YR");
+            Output(F("STC:UPD BAD-YR"));
             LastTimeUpdate = stc.getEpoch(); // we set this to prevent asking for network time each loop cycle.
           }
         }
         else {
-          Output("STC:UPD NO NC"); // No Network Clock
+          Output(F("STC:UPD NO NC")); // No Network Clock
           LastTimeUpdate = stc.getEpoch(); // we set this to prevent asking for network time each loop cycle.
         }
       }    

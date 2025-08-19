@@ -122,11 +122,11 @@
  
  /*
   * ======================================================================================================================
-  * Adding SPI1 and Wire1 to MKR NB 1500
+  * Adding SPI1 and Wire1 to MKR NB 1500  and will use modified library RF9X-RK-SPI1
   * 
   * https://learn.adafruit.com/using-atsamd21-sercom-to-add-more-spi-i2c-serial-ports?view=all
   * 
-  * SEE /Users/rjbubon/Library/Arduino15/packages/arduino/hardware/samd/1.8.13/variants/mkrnb1500/variant.cpp
+  * SEE /Users/rjbubon/Library/Arduino15/packages/arduino/hardware/samd/1.8.14/variants/mkrnb1500/variant.cpp
   * 
   * What is in use by default 
   *   SERCOM0   =  Unused
@@ -141,10 +141,10 @@
   *   SERCOM 0 & 3 are open
   *   
   *      SDA,PA08   0/00   2/00  <<<<<<<<<  SERCOM0/00 IN USE
-  *      SCL,PA09   0/01   2/01  <<<<<<<<<  SERCOM0/01 IN USE
-  *      D2,PA10    0/02   2/02  <<<<<<<<<  SERCOM0/02
-  *      D3,PA11    0/03   2/03  <<<<<<<<<  SERCOM0/03
-  *      A3,PA04           0/00  <<<<<<<<<  SERCOM0/00 ALT      
+  *      SCL,PA09   0/01   2/01  <<<<<<<<<  SERCOM0/01 IN USE   Will use the below
+  *      D2,PA10    0/02   2/02  <<<<<<<<<  SERCOM0/02          <<<< MOSI1
+  *      D3,PA11    0/03   2/03  <<<<<<<<<  SERCOM0/03          <<<< CLK1
+  *      A3,PA04           0/00  <<<<<<<<<  SERCOM0/00 ALT      <<<< MISO1   Alternate pin needed since 0/00 and 0/01 are in use
   *      A4,PA05           0/01  <<<<<<<<<  SERCOM0/01 ALT
   *      A5,PA06           0/02  <<<<<<<<<  SERCOM0/02 ALT
   *      A6,PA07           0/03  <<<<<<<<<  SERCOM0/03 ALT 
@@ -152,7 +152,7 @@
   *   SPIClass SPI (&PERIPH_SPI,  PIN_SPI_MISO,  PIN_SPI_SCK,  PIN_SPI_MOSI,  PAD_SPI_TX,  PAD_SPI_RX);
   *   
   *   SPI PAD Names
-  *        SEE: /Users/rjbubon/Library/Arduino15/packages/arduino/hardware/samd/1.8.13/cores/arduino/SERCOM.h
+  *        SEE: /Users/rjbubon/Library/Arduino15/packages/arduino/hardware/samd/1.8.14/cores/arduino/SERCOM.h
   *   
   *   SPI_PAD_0_SCK_1 means MOSI is on SERCOMn.0 and SCK is on SERCOMn.1
   *   SPI_PAD_2_SCK_3 means MOSI is on SERCOMn.2 and SCK is on SERCOMn.3
@@ -184,7 +184,7 @@
  * ======================================================================================================================
  */
 /* 
- SEE Directory /Users/rjbubon/Library/Arduino15/packages/arduino/hardware/samd/1.8.13/variants/mkrnb1500
+ SEE Directory /Users/rjbubon/Library/Arduino15/packages/arduino/hardware/samd/1.8.14/variants/mkrnb1500
 
 #diff variant.h.org variant.h
 101c101
@@ -197,57 +197,55 @@
 > #define PIN_SPI1_SCK     (3u)  // D3
 > #define PIN_SPI1_MISO    (18u) // A3
 > #define PERIPH_SPI1   sercom0
-> #define PAD_SPI1_TX   SPI_PAD_2_SCK_3
-> #define PAD_SPI1_RX   SERCOM_RX_PAD_0
+> #define PAD_SPI1_TX   SPI_PAD_2_SCK_3                  means MOSI is on SERCOMn.2 (D2) and             SCK is on SERCOMn.3 (D3)
+> #define PAD_SPI1_RX   SERCOM_RX_PAD_0              means MISO on SERCOMn.0
 > static const uint8_t MOSI1 = PIN_SPI1_MOSI;
 > static const uint8_t MISO1 = PIN_SPI1_MISO;
 > static const uint8_t SCK1  = PIN_SPI1_SCK;
 >
-119c130
-< #define WIRE_INTERFACES_COUNT 1
----
-> #define WIRE_INTERFACES_COUNT 2
-128a140,147
-> // Wire1
-> #define PIN_WIRE1_SDA        (0u)
-> #define PIN_WIRE1_SCL        (1u)
-> #define PERIPH_WIRE1         sercom3
-> #define WIRE_IT_HANDLER1     SERCOM3_Handler
-> static const uint8_t SDA1 = PIN_WIRE1_SDA;
-> static const uint8_t SCL1 = PIN_WIRE1_SCL;
+
 
 
 #diff variant.cpp.org variant.cpp
-29a30
->  |            |       Wire1      |        |                 |        |     |     |     |     |         |         |        |        |          |          |
-31a33,34
 >  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
 >  |            |       SPI1       |        |                 |        |     |     |     |     |         |         |        |        |          |          |
-33a37
+33a36
 >  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
-40,43c44,49
-<   { PORTA, 22, PIO_DIGITAL, (PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), No_ADC_Channel, PWM4_CH0,   TC4_CH0,      EXTERNAL_INT_6    },
-<   { PORTA, 23, PIO_DIGITAL, (PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), No_ADC_Channel, PWM4_CH1,   TC4_CH1,      EXTERNAL_INT_7    },
+42,43c45,48
 <   { PORTA, 10, PIO_DIGITAL, (PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), ADC_Channel18,  PWM1_CH0,   TCC1_CH0,     EXTERNAL_INT_NONE },
 <   { PORTA, 11, PIO_DIGITAL, (PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), ADC_Channel19,  PWM1_CH1,   TCC1_CH1,     EXTERNAL_INT_NONE },
 ---
->   { PORTA, 22, PIO_SERCOM, (PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), No_ADC_Channel, PWM4_CH0,   TC4_CH0,      EXTERNAL_INT_6    }, // SDA1: SERCOM3/PAD[0]
->   { PORTA, 23, PIO_SERCOM, (PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), No_ADC_Channel, PWM4_CH1,   TC4_CH1,      EXTERNAL_INT_7    }, // CLK1: SERCOM3/PAD[1]
 >
 >   { PORTA, 10, PIO_SERCOM, (PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), ADC_Channel18,  PWM1_CH0,   TCC1_CH0,     EXTERNAL_INT_NONE }, // MOSI1: SERCOM0/PAD[2]
 >   { PORTA, 11, PIO_SERCOM, (PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), ADC_Channel19,  PWM1_CH1,   TCC1_CH1,     EXTERNAL_INT_NONE }, // CLK1:  SERCOM0/PAD[3]
 >
-91a98,99
+61,62c66,67
+<  | 11         | SDA              |  PA08  |                 |   NMI  | *16 |     | X00 |     |   0/00  |  *2/00  | TCC0/0 | TCC1/2 | I2S/SD1  |          |
+<  | 12         | SCL              |  PA09  |                 |   09   | *17 |     | X01 |     |   0/01  |  *2/01  | TCC0/1 | TCC1/3 | I2S/MCK0 |          |
+---
+>  | 11         | SDA              |  PA08  |                 |   NMI  | *16 |     | X00 |     |  *0/00  |   2/00  | TCC0/0 | TCC1/2 | I2S/SD1  |          |
+>  | 12         | SCL              |  PA09  |                 |   09   | *17 |     | X01 |     |  *0/01  |   2/01  | TCC0/1 | TCC1/3 | I2S/MCK0 |          |
+91a97,98
 >  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
 >  |            |       SPI1       |        |                 |        |     |     |     |     |         |         |        |        |          |          |
-92a101
+92a100
 >  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
-101c110,112
+101c109,111
 <   { PORTA,  4, PIO_ANALOG,  (PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), ADC_Channel4,   PWM0_CH0,   TCC0_CH0,     EXTERNAL_INT_NONE },
 ---
 >
 >   { PORTA,  4, PIO_SERCOM_ALT,(PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER  ), ADC_Channel4,   PWM0_CH0,   TCC0_CH0,     EXTERNAL_INT_NONE }, // MISO1: SERCOM0/PAD[0]
 >
+133,134c143,144
+<  | 26         |                  |  PA12  | GSM_TX          |   12   |     |     |     |     |   2/00  |  *4/00  | TCC2/0 | TCC0/6 |          | AC/CMP0  |
+<  | 27         |                  |  PA13  | GSM_RX          |   13   |     |     |     |     |   2/01  |  *4/01  | TCC2/1 | TCC0/7 |          | AC/CMP1  |
+---
+>  | 26         |                  |  PA12  | GSM_TX          |   12   |     |     |     |     |  *2/00  |   4/00  | TCC2/0 | TCC0/6 |          | AC/CMP0  |
+>  | 27         |                  |  PA13  | GSM_RX          |   13   |     |     |     |     |  *2/01  |   4/01  | TCC2/1 | TCC0/7 |          | AC/CMP1  |
+136c146
+<  | 29         |                  |  PA15  | GSM_CTS         |   15   |     |     |     |     |   2/03  |  *4/03  |  TC3/1 | TCC0/5 |          | GCLK_IO1 |
+---
+>  | 29         |                  |  PA15  | GSM_CTS         |   15   |     |     |     |     |  *2/03  |   4/03  |  TC3/1 | TCC0/5 |          | GCLK_IO1 |
 */
 
 /*

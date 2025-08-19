@@ -117,18 +117,18 @@ byte get_batterystate() {
  */
 bool pmic_initialize() {
   if (!PMIC.begin()) {
-    Output ("PM:INIT FAILED");    SystemStatusBits |= SSB_PMIC;  // Turn On Bit
+    Output (F("PM:INIT FAILED"));    SystemStatusBits |= SSB_PMIC;  // Turn On Bit
   }
   else {
     PMIC_exists = true;
-    Output ("PM:FOUND");
+    Output (F("PM:FOUND"));
 
     // No Battery connected so tuen off the charger
     if (PMIC.disableCharge()) {
-      Output ("PM:CHRGR:DISABLED");
+      Output (F("PM:CHRGR:DISABLED"));
     }
     else {
-      Output ("PM:CHRGR:NOTDISABLED");
+      Output (F("PM:CHRGR:NOTDISABLED"));
     }
 
     sprintf (msgbuf,"PM:MSV=%.2f", PMIC.getMinimumSystemVoltage());  // Factory Default is 3.5

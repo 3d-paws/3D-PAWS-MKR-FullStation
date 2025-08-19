@@ -1,5 +1,5 @@
-#define COPYRIGHT "Copyright [2024] [University Corporation for Atmospheric Research]"
-#define VERSION_INFO "MKRFS-240728"  // MKR Full Station - Release Date
+#define COPYRIGHT "Copyright [2025] [University Corporation for Atmospheric Research]"
+#define VERSION_INFO "MKRFS-250817"  // MKR Full Station - Release Date
 
 // 3D-PAWS-MKR-FullStation
 // Board Manager Package: Arduino SAMD Boards (32-bits ARM Cortex-M0+)
@@ -33,7 +33,7 @@
 //   2022-10-08 RJB Added configuration option "cf_enable_fuelgauge" to enable/disable the use of the fuel gauge
 //                  Can not trust the library to tell us if it is not connected to wire1 bus.
 //                  Reworked GetCellEpochTime() to do more checks and Ouput info, then reworked NetworkTimeManagement()
-//                    since GetCellEpochTime() is now doing the heavy lifting on the checks. Also reworked OBS_URL_Send().
+//                    since GetCellEpochTime() is now doing the heavy lifting on the checks. Also reworked OBS_Send().
 //   2022-10-18 RJB Think SI1145 sensor was conflicting with on board ECC508 chip at i2c address 0x60. 
 //                    Moved SI1145 to Wire1 i2c bus.
 //   2022-10-25 RJB Set Float values to be 1/10 percision
@@ -79,6 +79,13 @@
 //   2024-11-05 RJB Discovered BMP390 first pressure reading is bad. Added read pressure to bmx_initialize()
 //                  Bug fixes for 2nd BMP sensor in bmx_initialize() using first sensor data structure
 //                  Now will only send humidity if bmx sensor supports it.
+//   2024-11-20 RJB Added SDU support. If UPDATE.bin exists on the SD card, Firmware is updated. File deleted.
+//
+//   2025-08-15 RJB Major Code Update to Match Particle FS Code
+//                  Added EP.h for EEPROM rain totals support library - Adafruit_FRAM_I2C
+//                  Data is now stored as JSON and converted to a GET URL for transmission to Chords.
+//                  Added clearing of EEPROM rain totals CRT.TXT. If file exists, rain totals cleared and file
+//                    removed.
 //
 //  Note: The below 2 cases is where I have seen a reboot not resolving a modem problem.
 //        Resolution required removing of power (USB and Battery) to clean up the modem.
@@ -122,8 +129,6 @@
 //     SEE https://www.arduino.cc/reference/en/libraries/arduino_bq24195/
 //   WatchDog Timer SAMD21have
 //     SEE https://github.com/gpb01/wdt_samd21
-//   Interrupt Pins
-//     Pins (0, 1, 4, 5, 6, 7, 8, 16 / A1, 17 / A2).
 
 // MKR SD Proto Shield
 //   SEE https://store-usa.arduino.cc/products/mkr-sd-proto-shield
@@ -140,24 +145,28 @@
 // Twilio Super SIM
 // https://www.twilio.com/docs/iot/supersim/cellular-modem-knowledge-base/ublox-supersim#sara-r4-cat-m1-nb-iot
 
+// EEPROM  https://www.adafruit.com/product/5146
+
+// CHORDS Portal https://earthcubeprojects-chords.github.io/chords-docs/
 /*
- * A0   = WatchDog Monitor/Relay Reset Trigger
- * A1   = Rain Gauge IRQ
- * A2   = Wind Speed IRQ
- * A3   = SPI1 SPI1 MISO LoRa
- * A4   = Serial Console (Ground to Enable)
- * A5   = LoRa Reset
+ * Interrupt Pins 0, 1, 4, 5, 6, 7, 8, (16/A1), (17/A2)
+ * A0   = Serial Console (Ground to Enable)
+ * A1*  = Interrupt For Rain gauge 2  
+ * A2*  = Distance Sensor
+ * A3   = LoRa SPI1 SPI1 MISO
+ * A4   = LoRa Reset 
+ * A5   = WatchDog Monitor/Relay Reset Trigger 
  * A6   = WatchDog Monitor Heartbeat
  * 
- * D0   = Wire1 I2C/SDA SI1145
- * D1   = Wire1 I2C/CLK SI1145
- * D2   = SPI1 MOSI LoRa
- * D3   = SPI1 CLK LoRa
- * D4   = SD Card Chip Select
- * D5   = LoRa SS (Slave Select)
- * D6   =
- * D7   = LoRa IRQ
- * D8   = SPI0 MOSI - SD Card
+ * D0*  = Interrupt For Anemometer
+ * D1*  = Interrupt For Rain gauge 1
+ * D2   = LoRa SPI1 MOSI
+ * D3   = LoRa SPI1 CLK
+ * D4*  = SD Card Chip Select
+ * D5*  = LoRa SS (Slave Select)
+ * D6*  = On Board LED
+ * D7*  = LoRa IRQ
+ * D8*  = SPI0 MOSI - SD Card
  * D9   = SPI0 CLK  - SD Card
  * D10  = SPI0 MISO - SD Card
  * D11  = I2C SDA
@@ -171,9 +180,23 @@
  * Includes
  *=======================================================================================================================
  */
+
+ /*
+ Include the SDU library 
+ 
+ This will add some code to the sketch before setup() is called
+ to check if an SD card is present and UPDATE.bin exists on the
+ SD card.
+ 
+ If UPDATE.bin is present, the file is used to update the sketch
+ running on the board. After this UPDATE.bin is deleted from the
+ SD card.
+*/
+#include <SDU.h>  // Secure Digital Updater 
 #include <SPI.h>
 #include <wiring_private.h> // Include for pinPeripheral() function 
 #include <Wire.h>
+#include <ArduinoJson.h>
 
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
@@ -184,6 +207,13 @@
 #include <Adafruit_SHT31.h>
 #include <Adafruit_VEML7700.h>
 #include <Adafruit_PM25AQI.h>
+#include <Adafruit_EEPROM_I2C.h>
+#include <Adafruit_HDC302x.h>
+#include <Adafruit_LPS35HW.h>
+#include <i2cArduino.h>
+#include <LeafSens.h>
+#include <i2cMultiSm.h>
+
 #include <Arduino_ConnectionHandler.h>  // Manage Cell Network Connection (Modified)
 #include <Arduino_PMIC.h>       // Arduino_BQ24195-master 
 #include <ArduinoECCX08.h>      // Crypto Chip
@@ -204,38 +234,48 @@ RTCZero stc;
  * ON =    SSB |= SSB_PWROFF
  * ======================================================================================================================
  */
-#define SSB_PWRON              0x1  // 1      Set at power on, but cleared after first observation
-#define SSB_SD                 0x2  // 2      Set if SD missing at boot or other SD related issues
-#define SSB_RTC                0x4  // 4      Set if RTC missing at boot
-#define SSB_OLED               0x8  // 8      Set if OLED missing at boot, but cleared after first observation
-#define SSB_N2S               0x10  // 16     Set when Need to Send observations exist
-#define SSB_FROM_N2S          0x20  // 32     Set in transmitted N2S observation when finally transmitted
-#define SSB_AS5600            0x40  // 64     Set if wind direction sensor AS5600 has issues
-#define SSB_BMX_1             0x80  // 128    Set if Barometric Pressure & Altitude Sensor missing
-#define SSB_BMX_2            0x100  // 256    Set if Barometric Pressure & Altitude Sensor missing
-#define SSB_HTU21DF          0x200  // 512    Set if Humidity & Temp Sensor missing
-#define SSB_LUX              0x400  // 1024   Set if VEML7700 Sensor missing
-#define SSB_MCP_1            0x800  // 2048   Set if Precision I2C Temperature Sensor missing
-#define SSB_MCP_2           0x1000  // 4096   Set if Precision I2C Temperature Sensor missing
-#define SSB_LORA            0x2000  // 8192   Set if LoRa Radio missing at startup
-#define SSB_PMIC            0x4000  // 16384  Set if Power Management IC missing at startup
-#define SSB_SHT_1           0x8000  // 32768  Set if SHTX1 Sensor missing
-#define SSB_SHT_2           010000  // 65536  Set if SHTX2 Sensor missing
-#define SSB_HIH8           0x20000  // 131072 Set if HIH8000 Sensor missing
-#define SSB_PM25AQI        0x40000  // 262144 Set if PM25AQI Sensor missing
+#define SSB_PWRON           0x1        // Set at power on, but cleared after first observation
+#define SSB_SD              0x2        // Set if SD missing at boot or other SD related issues
+#define SSB_RTC             0x4        // Set if RTC missing at boot
+#define SSB_OLED            0x8        // Set if OLED missing at boot, but cleared after first observation
+#define SSB_N2S             0x10       // Set when Need to Send observations exist
+#define SSB_FROM_N2S        0x20       // Set in transmitted N2S observation when finally transmitted
+#define SSB_AS5600          0x40       // Set if wind direction sensor AS5600 has issues                                                        
+#define SSB_BMX_1           0x80       // Set if Barometric Pressure & Altitude Sensor missing
+#define SSB_BMX_2           0x100      // Set if Barometric Pressure & Altitude Sensor missing
+#define SSB_HTU21DF         0x200      // Set if Humidity & Temp Sensor missing
+#define SSB_PMIC            0x400      // Set if Power Management IC missing at startup
+#define SSB_MCP_1           0x800      // Set if MCP9808 I2C Temperature Sensor missing
+#define SSB_MCP_2           0x1000     // Set if MCP9808 I2C Temperature Sensor missing
+#define SSB_MCP_3           0x2000     // Set if MCP9808 I2C Temperature Sensor missing
+#define SSB_LORA            0x4000     // Set if LoRa Radio missing at startup
+#define SSB_SHT_1           0x8000     // Set if SHTX1 Sensor missing
+#define SSB_SHT_2           0x10000    // Set if SHTX2 Sensor missing
+#define SSB_HIH8            0x20000    // Set if HIH8000 Sensor missing
+#define SSB_VLX             0x40000    // Set if VEML7700 Sensor missing
+#define SSB_PM25AQI         0x80000    // Set if PM25AQI Sensor missing
+#define SSB_HDC_1           0x100000   // Set if HDC302x I2C Temperature Sensor missing
+#define SSB_HDC_2           0x200000   // Set if HDC302x I2C Temperature Sensor missing
+#define SSB_BLX             0x400000   // Set if BLUX30 I2C Sensor missing
+#define SSB_LPS_1           0x800000   // Set if LPS35HW I2C Sensor missing
+#define SSB_LPS_2           0x1000000  // Set if LPS35HW I2C Sensor missing
+#define SSB_TLW             0x2000000  // Set if Tinovi Leaf Wetness I2C Sensor missing
+#define SSB_TSM             0x4000000  // Set if Tinovi Soil Moisture I2C Sensor missing
+#define SSB_TMSM            0x8000000  // Set if Tinovi MultiLevel Soil Moisture I2C Sensor missing
+#define SSB_EEPROM          0x10000000 // Set if 24LC32 EEPROM missing
 
-#define REBOOT_PIN             A0  // Connect to shoot thy self relay
-#define HEARTBEAT_PIN          A6  // Connect to PICAXE-8M PIN-C3
+#define REBOOT_PIN             A5  // WatchDog Reset Trigger
+#define HEARTBEAT_PIN          A6  // WatchDog Monitor Heartbeat
 
-#define TM_VALID_YEAR_START    2024
+#define TM_VALID_YEAR_START    2025
 #define TM_VALID_YEAR_END      2033
 
 #define LED_PIN                   LED_BUILTIN
 #define ERROR_LED_PIN             LED_BUILTIN
 #define ERROR_LED_LIGHTUP_STATE   HIGH // the state that makes the led light up on your board, either low or high
 
-#define MAX_MSGBUF_SIZE   1024
-#define MAX_HTTPGET_SIZE  1024
+#define MAX_MSGBUF_SIZE 256
+#define MAX_HTTP_SIZE  512
 
 /*
  * ======================================================================================================================
@@ -248,20 +288,26 @@ bool NetworkHasBeenOperational = false;  // Get set if we have successfully tran
 
 char msgbuf[MAX_MSGBUF_SIZE];   // Used to hold messages
 char *msgp;                     // Pointer to message text
-char obsbuf[MAX_HTTPGET_SIZE];  // Url that holds observations for HTTP GET
+char obsbuf[MAX_HTTP_SIZE];     // Observations for HTTP
 char *obsp;                     // Pointer to obsbuf
 char Buffer32Bytes[32];         // General storage
 char ModemFirmwareVersion[32];
+byte DevID[12];                 // Crypto Chip ID
+bool DevID_Exists=false;
 
+bool TurnLedOff = false;      // Set true in rain gauge interrupt
 unsigned long  SystemStatusBits = SSB_PWRON; // Set bit 1 to 1 for initial value power on. Is set to 0 after first obs
-
 bool JustPoweredOn = true;    // Used to clear SystemStatusBits set during power on device discovery
 
-int SCE_PIN = A4;
+int SCE_PIN = A0;             // Serial Console Enable
 int DSM_countdown = 1800; // Exit Display Station Monitor screen when reaches 0 - protects against burnt out pin or forgotten jumper
 bool SerialConsoleEnabled = false;  // Variable for serial monitor control
 
 int DailyRebootCountDownTimer;
+
+#define PUBFAILBEFOREREBOOT 4
+int OBS_PubFailCnt = 0;
+ 
 
 /*
  * ======================================================================================================================
@@ -275,12 +321,50 @@ int DailyRebootCountDownTimer;
 #include "PM.h"                   // Power Management
 #include "Network.h"
 #include "TM.h"                   // Time Management
+#include "RWD.h"                  // Rain Wind Distance
+#include "EP.h"                   // EEPROM
 #include "SDC.h"                  // SD Card
-
-#include "RainWind.h"
 #include "Sensors.h"
 #include "Lora.h"
 #include "SM.h"                   // Station Monitor
+
+/* 
+ *=======================================================================================================================
+ * obs_interval_initialize() - observation interval 1,2,5,6,10,15,20,30
+ *=======================================================================================================================
+ */
+void obs_interval_initialize() {
+  if ((cf_obs_period != 1) &&
+      (cf_obs_period != 2) &&
+      (cf_obs_period != 5) && 
+      (cf_obs_period != 6) && 
+      (cf_obs_period != 10) &&
+      (cf_obs_period != 15) &&
+      (cf_obs_period != 20) &&
+      (cf_obs_period != 30)) {
+    sprintf (Buffer32Bytes, "OBS Interval:%dm Now:1m", cf_obs_period);
+    Output(Buffer32Bytes);
+    cf_obs_period = 1; 
+  }
+  else {
+    sprintf (Buffer32Bytes, "OBS Interval:%dm", cf_obs_period);
+    Output(Buffer32Bytes);    
+  }
+}
+
+/* 
+ *=======================================================================================================================
+ * time_to_next_obs() - This will return milliseconds to next observation
+ *=======================================================================================================================
+ */
+unsigned long time_to_next_obs() {
+  if (cf_obs_period == 1) {
+    return (millis() + 60000); // Just go 60 seconds from now.
+  }
+  else {
+    return ((cf_obs_period*60000) - (millis() % (cf_obs_period*60000))); // The mod operation gives us seconds passed
+  }
+}
 
 /*
  * ======================================================================================================================
@@ -296,14 +380,22 @@ void HeartBeat() {
 /*
  * ======================================================================================================================
  * BackGroundWork() - Take Sensor Reading, Check LoRa for Messages, Delay 1 Second for use as timming delay            
+ *                    Anything that needs sampling or to run every second add below.
  * ======================================================================================================================
  */
 void BackGroundWork() {
-  // Anything that needs sampling or to run every second add below. Example Wind Speed and Direction, StreamGauge   
+  unsigned long OneSecondFromNow = millis() + 1000;
+  
   ConnectionState = conMan.check();  
   NetworkTimeManagement();
-  
-  Wind_TakeReading();
+
+  if (cf_ds_enable) {
+    DS_TakeReading();
+  }
+
+  if (AS5600_exists) {
+    Wind_TakeReading();
+  }
 
   if (PM25AQI_exists) {
     pm25aqi_TakeReading();
@@ -314,12 +406,85 @@ void BackGroundWork() {
   if (LORA_exists) {
     lora_msg_poll(); // Provides a 750ms delay
   }
-  else {
-    delay (750);
+
+  unsigned long TimeRemaining = (OneSecondFromNow - millis());
+  if ((TimeRemaining > 0) && (TimeRemaining < 1000)) {
+    delay (TimeRemaining);
+  }
+  
+  if (TurnLedOff) {   // Turned on by rain gauge interrupt handler
+    digitalWrite(LED_PIN, LOW);  
+    TurnLedOff = false;
   }
 }
 
 #include "OBS.h"          //  Logging Observations
+
+/* 
+ *=======================================================================================================================
+ * Wind_Distance_Air_Initialize()
+ *=======================================================================================================================
+ */
+void Wind_Distance_Air_Initialize() {
+  Output (F("WDA:Init()"));
+
+  // Clear windspeed counter
+  if (AS5600_exists) {
+    anemometer_interrupt_count = 0;
+    anemometer_interrupt_stime = millis();
+  
+    // Init default values.
+    wind.gust = 0.0;
+    wind.gust_direction = -1;
+    wind.bucket_idx = 0;
+    wind.sample_count = 0;
+  }
+
+  // Take N 1s samples of wind speed and direction and fill arrays with values.
+  if (AS5600_exists | PM25AQI_exists |cf_ds_enable) {
+    for (int i=0; i< WIND_READINGS; i++) {
+      BackGroundWork();
+    
+      if (SerialConsoleEnabled) Serial.print(".");  // Provide Serial Console some feedback as we loop and wait til next observation
+      OLED_spin();
+    }
+    if (SerialConsoleEnabled) Serial.println();  // Send a newline out to cleanup after all the periods we have been logging
+  }
+
+  // Now we have N readings we can output readings
+  
+  if (AS5600_exists) {
+    Wind_TakeReading();
+    float ws = Wind_SpeedAverage();
+    sprintf (Buffer32Bytes, "WS:%d.%02d WD:%d", (int)ws, (int)(ws*100)%100, Wind_DirectionVector());
+    Output (Buffer32Bytes);
+  }
+  
+  if (PM25AQI_exists) {
+    sprintf (Buffer32Bytes, "pm1s10:%d", pm25aqi_obs.max_s10);
+    Output (Buffer32Bytes);
+    
+    sprintf (Buffer32Bytes, "pm1s25:%d", pm25aqi_obs.max_s25);
+    Output (Buffer32Bytes); 
+    
+    sprintf (Buffer32Bytes, "pm1s100:%d", pm25aqi_obs.max_s100);
+    Output (Buffer32Bytes);
+    
+    sprintf (Buffer32Bytes, "pm1e10:%d", pm25aqi_obs.max_e10);
+    Output (Buffer32Bytes);
+    
+    sprintf (Buffer32Bytes, "pm1e25:%d", pm25aqi_obs.max_e25);
+    Output (Buffer32Bytes);
+    
+    sprintf (Buffer32Bytes, "pm1e100:%d", pm25aqi_obs.max_e100);
+    Output (Buffer32Bytes);
+  }
+
+  if (cf_ds_enable) {
+    sprintf (Buffer32Bytes, "DS:%d", DS_Median());
+    Output (Buffer32Bytes);
+  }
+}
 
 /*
  * ======================================================================================================================
@@ -332,41 +497,42 @@ void setup()
   Output_Initialize();
   delay(2000); // prevents usb driver crash on startup, do not omit this
 
-  Serial_writeln(COPYRIGHT);
-  Output (VERSION_INFO);
+  Serial_writeln(F(COPYRIGHT));
+  Output (F(VERSION_INFO));
   //delay (4000);      // Pause so user can see version on oled
 
-  Output ("REBOOTPN SET");
+  Output (F("REBOOTPN SET"));
   pinMode (REBOOT_PIN, OUTPUT); // By default all pins are LOW when board is first powered on. Setting OUTPUT keeps pin LOW.
   
-  Output ("HEARTBEAT SET");
+  Output (F("HEARTBEAT SET"));
   pinMode (HEARTBEAT_PIN, OUTPUT);
   HeartBeat();
 
   // Set Daily Reboot Timer
   DailyRebootCountDownTimer = cf_reboot_countdown_timer;
 
-  Output("ECCX08:INIT");
+  Output(F("ECCX08:INIT"));
   if (!ECCX08.begin()) {
-    Output("ECCX08:NF");
+    Output(F("ECCX08:NF"));
   }
   else {
-    byte SN[12];
-    if (ECCX08.serialNumber(SN)) {
-      sprintf (Buffer32Bytes, "SN:%02X%02X%02X%02X%02X%02X%02X%02X%02X", 
-        SN[0],SN[1],SN[2],SN[3],SN[4],SN[5],SN[6],SN[7],SN[8]);
+    
+    if (ECCX08.serialNumber(DevID)) {
+      DevID_Exists = true;
+      sprintf (Buffer32Bytes, "DevID:%02X%02X%02X%02X%02X%02X%02X%02X%02X", 
+        DevID[0],DevID[1],DevID[2],DevID[3],DevID[4],DevID[5],DevID[6],DevID[7],DevID[8]);
       Output (Buffer32Bytes);      
     }
     else {
-      Output("SN:NF");
+      Output(F("DevID:NF"));
     } 
   }
 
   // Initialize SD card if we have one.
-  Output("SD:INIT");
+  Output(F("SD:INIT"));
   SD_initialize();
   if (!SD_exists) {
-    Output("ERROR:SD NF!");
+    Output(F("ERROR:SD NF!"));
     if (STOP_IF_SDNF) {    // Set in define statement at top of file what we should do
       while (true) {
         delay(1000);
@@ -379,11 +545,11 @@ void setup()
   // Report if we have Need to Send Observations
   if (SD_exists && SD.exists(SD_n2s_file)) {
     SystemStatusBits |= SSB_N2S; // Turn on Bit
-    Output("N2S:FOUND");
+    Output(F("N2S:FOUND"));
   }
   else {
     SystemStatusBits &= ~SSB_N2S; // Turn Off Bit
-    Output("N2S:NF");
+    Output(F("N2S:NF"));
   }
 
 
@@ -394,39 +560,57 @@ void setup()
   conMan.GSMResetVariables(cf_sim_pin, cf_sim_apn, cf_sim_username, cf_sim_password);
 #endif
 
-  Output("CM:INIT");   
+  Output(F("CM:INIT"));   
   conMan.addCallback(NetworkConnectionEvent::CONNECTED, onNetworkConnect);
   conMan.addCallback(NetworkConnectionEvent::DISCONNECTED, onNetworkDisconnect);
   conMan.addCallback(NetworkConnectionEvent::ERROR, onNetworkError);  
   
-  Output("CM:CHECK");
+  Output(F("CM:CHECK"));
   ConnectionState = conMan.check();  
-  Output("CM:CHECK AFTER");
+  Output(F("CM:CHECK AFTER"));
   
   // Initialize System Time Clock
-  Output("STC:INIT");
+  Output(F("STC:INIT"));
   stc.begin(); 
   
   // Read RTC and set system clock if RTC clock valid
-  Output("RTC:INIT");
+  Output(F("RTC:INIT"));
   rtc_initialize();
+
+  EEPROM_initialize();
+  SD_ClearRainTotals();
+
+  obs_interval_initialize();
 
   // NOTE: If no RTC or it is Invalid we have no system clock at this point
 
   // Power Management IC (bq24195)
-  Output("PMIC:INIT");
+  Output(F("PMIC:INIT"));
   pmic_initialize();
 
-  // Optipolar Hall Effect Sensor SS451A - Rain Gauge
-  raingauge_interrupt_count = 0;
-  raingauge_interrupt_stime = millis();
-  raingauge_interrupt_ltime = 0;  // used to debounce the tip
-  attachInterrupt(RAINGAUGE_IRQ_PIN, raingauge_interrupt_handler, FALLING);
-  
-  // Optipolar Hall Effect Sensor SS451A - Wind Speed
-  anemometer_interrupt_count = 0;
-  anemometer_interrupt_stime = millis();
-  attachInterrupt(ANEMOMETER_IRQ_PIN, anemometer_interrupt_handler, FALLING);
+  // Optipolar Hall Effect Sensor SS451A - Rain1 Gauge
+  if (cf_rg1_enable) {
+    raingauge1_interrupt_count = 0;
+    raingauge1_interrupt_stime = millis();
+    raingauge1_interrupt_ltime = 0;  // used to debounce the tip
+    attachInterrupt(RAINGAUGE1_IRQ_PIN, raingauge1_interrupt_handler, FALLING);
+    Output (F("RG1:ENABLED"));
+  }
+  else {
+    Output (F("RG1:NOT ENABLED"));
+  }
+
+  // Optipolar Hall Effect Sensor SS451A - Rain2 Gauge
+  if (cf_rg2_enable) {
+    raingauge2_interrupt_count = 0;
+    raingauge2_interrupt_stime = millis();
+    raingauge2_interrupt_ltime = 0;  // used to debounce the tip
+    attachInterrupt(RAINGAUGE2_IRQ_PIN, raingauge2_interrupt_handler, FALLING);
+    Output (F("RG2:ENABLED"));
+  }
+  else {
+    Output (F("RG2:NOT ENABLED"));
+  }
 
   // I2C Sensor Init
   as5600_initialize();
@@ -437,7 +621,12 @@ void setup()
   hih8_initialize();
   lux_initialize();
   pm25aqi_initialize();
-
+  hdc_initialize();
+  lps_initialize();
+  tlw_initialize();
+  tsm_initialize();
+  tmsm_initialize();  
+  
   // Derived Observations
   wbt_initialize();
   hi_initialize();
@@ -445,7 +634,7 @@ void setup()
 
   ConnectionState = conMan.check();
 
-  Output("CM:CHECK AGAIN");
+  Output(F("CM:CHECK AGAIN"));
   WaitForNetworkConnection(2); // Let wait on the network to come online
 
   // Initialize RH_RF95 LoRa Module
@@ -457,7 +646,18 @@ void setup()
   PrintModemFW();
   PrintCellSignalStrength();
 
-  Wind_Initialize(); // Will call HeartBeat()
+  if (AS5600_exists) {
+    Output (F("WS:Enabled"));
+    // Optipolar Hall Effect Sensor SS451A - Wind Speed
+    anemometer_interrupt_count = 0;
+    anemometer_interrupt_stime = millis();
+    attachInterrupt(ANEMOMETER_IRQ_PIN, anemometer_interrupt_handler, FALLING);
+  }
+
+  Output (F("Start Main Loop"));
+  Time_of_next_obs = millis() + 60000; // Give Network some time to connect
+  
+  Wind_Distance_Air_Initialize(); // Will call HeartBeat()
 }
 
 /*
@@ -483,30 +683,35 @@ void loop()
 
     // This will be invalid if the RTC was bad at poweron and we have not connected to Cell network
     // Upon connection to cell network system time is set and this becomes valid.
-    if (STC_valid) {  
+    if (STC_valid) {
+      bool TakeOBS=false;  
  
       // Perform an Observation, save in OBS structure, Write to SD
-      if ( ((stc.getEpoch() - lastOBS) >= OBSERVATION_INTERVAL) && (wind.sample_count>=60)) {  // 1 minute minus 1 second    
-        lastOBS = stc.getEpoch(); // Update time we last sent (or attempted to send) observations.      
+      if (millis() >= Time_of_next_obs) {
+        TakeOBS=true;
+      }
+
+      // If we have wind then make sure we have 60 samples before making observation
+      if (AS5600_exists && (wind.sample_count<60)) {    
+        TakeOBS=false; 
+      }
+      
+      if (TakeOBS) {
+        Time_of_obs = stc.getEpoch(); // Update time we last sent (or attempted to send) observations.      
         OBS_Do();  // Here is why we are here 
         
         // Time since last Clock update, Countdown to daily reboot, Loop count with no network
-        sprintf (Buffer32Bytes, "LOOP %u:%d:%d", lastOBS-LastTimeUpdate, DailyRebootCountDownTimer, NoNetworkLoopCycleCount);
+        sprintf (Buffer32Bytes, "LOOP %u:%d:%d:%d", Time_of_obs-LastTimeUpdate, DailyRebootCountDownTimer, NoNetworkLoopCycleCount, OBS_PubFailCnt);
         Output (Buffer32Bytes);
 
+        Time_of_next_obs = time_to_next_obs();
         JPO_ClearBits(); // Clear status bits from boot after we log our first observations
       }
     }
 
-    // Relay LoRa Distance Message to Logging Site - So we can use a Cell phone to see the information
-    if ( (cf_lora_distancelog == 1) && LoRaDistanceMessageSet) {
-      LoRaDistanceMessageSet = false;
-      lora_message_relay(LoRaDistanceMessage);
-    }
-
     // Check to see if we should reset the modem after so many loops with out a network connection
     if (NoNetworkLoopCycleCount >= cf_no_network_reset_count) {
-      Output("NW TimeOut:Reboot");
+      Output(F("NW TimeOut:Reboot"));
       delay (5000);
       conMan.disconnect();  // Disconnect calls NB.shutdown() which calls send("AT+CPWROFF")       
       digitalWrite(REBOOT_PIN, HIGH);
@@ -515,18 +720,30 @@ void loop()
       digitalWrite(REBOOT_PIN, LOW);
       NoNetworkLoopCycleCount = 0; // Reset count incase reboot fails
     }
+
+    // Check to see if we should reset the modem after so many publish fails
+    if (OBS_PubFailCnt >= PUBFAILBEFOREREBOOT) {
+      Output(F("Publish Fail:Reboot"));
+      delay (5000);
+      conMan.disconnect();  // Disconnect calls NB.shutdown() which calls send("AT+CPWROFF")       
+      digitalWrite(REBOOT_PIN, HIGH);
+      // Should not get here
+      delay (1000);
+      digitalWrite(REBOOT_PIN, LOW);
+      OBS_PubFailCnt = 0; // Reset count incase reboot fails
+    }
     
     // Default = Reboot Boot Once a Day 60sec x 60min x 24hrs = 86400 seconds/day
     // Not using time but a loop counter.
     if (--DailyRebootCountDownTimer<=0) {
       // Lets not rip the rug out from the modem. Do a graceful shutdown.
-      Output ("Daily Reboot");
+      Output (F("Daily Reboot"));
       delay (5000);  
       conMan.disconnect();  // Disconnect calls NB.shutdown() which calls send("AT+CPWROFF")        
       digitalWrite(REBOOT_PIN, HIGH);
       // Should not get here
       delay (5000);
-      Output ("Rebooting");
+      Output (F("Rebooting"));
       digitalWrite(REBOOT_PIN, LOW);
       DailyRebootCountDownTimer = cf_reboot_countdown_timer; // Reset count incase reboot fails
     }
@@ -534,7 +751,7 @@ void loop()
 
   // Error State should of reconnected us - But try again below.
   if (ConnectionState == NetworkConnectionState::ERROR) {
-    Output ("NWSE:ReConnect()");
+    sprintf (Buffer32Bytes, "NWSE DR%d:NL%d:%s", DailyRebootCountDownTimer, NoNetworkLoopCycleCount, (STC_valid) ?"STC-OK" : "STC-!OK");
     
     NoNetworkLoopCycleCount += 2; // If we are stuck not connecting then lets speed up time to reboot
                                   // because the reconnect has a 2 minute delay before returning
