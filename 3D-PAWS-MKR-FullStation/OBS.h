@@ -8,7 +8,6 @@
 
  // Prototype thess functions to aviod compile function unknown issue.
 void BackGroundWork();   
-unsigned long time_to_next_obs();
 
 #define OBSERVATION_INTERVAL      60   // Seconds
 
@@ -38,9 +37,6 @@ typedef struct {
 } OBSERVATION_STR;
 
 OBSERVATION_STR obs;
-
-unsigned long Time_of_obs = 0;              // unix time of observation
-unsigned long Time_of_next_obs = 0;         // time of next observation in ms
 
 void OBS_N2S_Publish();   // Prototype this function to aviod compile function unknown issue.
 
@@ -1120,7 +1116,13 @@ void OBS_N2S_Publish() {
         // Loop through each line / obs and transmit
         
         // set timer on when we need to stop sending n2s obs
-        unsigned long  TimeFromNow = time_to_next_obs() - 45000; // stop sending 15 seconds before next observations period
+        unsigned long  TimeFromNow;
+        if (cf_obs_period == 1) {
+          TimeFromNow = Time_of_next_obs - (15 * 1000); // stop sending 15s before next observation period if 1m obs
+        }
+        else {
+          TimeFromNow = Time_of_next_obs - (60 * 1000); // stop sending 1m before next observation period if not 1m obs
+        }
 
         i = 0;
         while (fp.available() && (i < MAX_HTTP_SIZE )) {

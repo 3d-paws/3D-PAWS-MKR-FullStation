@@ -308,6 +308,8 @@ int DailyRebootCountDownTimer;
 #define PUBFAILBEFOREREBOOT 4
 int OBS_PubFailCnt = 0;
  
+unsigned long Time_of_obs = 0;         // unix time of observation
+unsigned long Time_of_next_obs = 0;    // time of next observation in ms
 
 /*
  * ======================================================================================================================
@@ -358,11 +360,15 @@ void obs_interval_initialize() {
  *=======================================================================================================================
  */
 unsigned long time_to_next_obs() {
+  unsigned long ms = millis();
+  
   if (cf_obs_period == 1) {
-    return (millis() + 60000); // Just go 60 seconds from now.
+    return (ms + 60000); // Just go 60 seconds from now.
   }
   else {
-    return ((cf_obs_period*60000) - (millis() % (cf_obs_period*60000))); // The mod operation gives us seconds passed
+    // Lets try and keep the obs interval accurate by substrating overhead processing
+    // current ms time + ms future obs time - time from last obs
+    return (ms + (cf_obs_period*60000) - (ms - Time_of_next_obs));
   }
 }
 
@@ -418,6 +424,7 @@ void BackGroundWork() {
   }
 }
 
+// I know its ulgy to include code like this. - rjb
 #include "OBS.h"          //  Logging Observations
 
 /* 
@@ -655,7 +662,7 @@ void setup()
   }
 
   Output (F("Start Main Loop"));
-  Time_of_next_obs = millis() + 60000; // Give Network some time to connect
+  Time_of_next_obs = millis() + 60000; // Give Network some time to connect - ignore config setting here.
   
   Wind_Distance_Air_Initialize(); // Will call HeartBeat()
 }
