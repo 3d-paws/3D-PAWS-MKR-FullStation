@@ -151,7 +151,7 @@ bool OBS_Send(char *obs)
         }
       }
 
-      sprintf (buf, "OBS:HTTP RESP[%s]", response); // Have seen this 5B E4 53 5D,  E4 53, E4 53
+      sprintf (buf, "OBS:HTTP RESP[%s]", response); // SEE (E4 53) on failure
 
       // Print response as hex
       Output(buf);
@@ -162,10 +162,16 @@ bool OBS_Send(char *obs)
       // instability or the need for modem resets in some edge cases due to how the firmware handles 
       // connection states
       
-      // Read rest of the response after first line      
+      // Read rest of the response after first line - I have seen this hang with unknow characters be read
+      int count=0;      
       while (client.connected() || client.available()) { //connected or data available
          char c = client.read(); //gets byte from buffer
          Serial_write (c);
+         if (++count > 1000){
+           Serial_writeln("");
+           Serial_write("OBS:HTTP RESP BREAK");
+           break;
+         }
       }
       Serial_writeln("");
 
@@ -1118,10 +1124,10 @@ void OBS_N2S_Publish() {
         // set timer on when we need to stop sending n2s obs
         unsigned long  TimeFromNow;
         if (cf_obs_period == 1) {
-          TimeFromNow = Time_of_next_obs - (15 * 1000); // stop sending 15s before next observation period if 1m obs
+          TimeFromNow = time_to_next_obs() - (15 * 1000); // stop sending 15s before next observation period if 1m obs
         }
         else {
-          TimeFromNow = Time_of_next_obs - (60 * 1000); // stop sending 1m before next observation period if not 1m obs
+          TimeFromNow = time_to_next_obs() - (60 * 1000); // stop sending 1m before next observation period if not 1m obs
         }
 
         i = 0;

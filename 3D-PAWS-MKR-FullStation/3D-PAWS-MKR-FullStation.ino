@@ -732,11 +732,13 @@ void loop()
     if (OBS_PubFailCnt >= PUBFAILBEFOREREBOOT) {
       Output(F("Publish Fail:Reboot"));
       delay (5000);
-      conMan.disconnect();  // Disconnect calls NB.shutdown() which calls send("AT+CPWROFF")       
+      conMan.disconnect();  // Disconnect calls NB.shutdown() which calls send("AT+CPWROFF")    
+/*   
       digitalWrite(REBOOT_PIN, HIGH);
       // Should not get here
       delay (1000);
       digitalWrite(REBOOT_PIN, LOW);
+*/
       OBS_PubFailCnt = 0; // Reset count incase reboot fails
     }
     
