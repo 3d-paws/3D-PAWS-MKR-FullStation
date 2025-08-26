@@ -44,7 +44,8 @@
 unsigned long LastTimeConManCalled = 0;   // used to control how often we trey and restart the modem
 
 #if defined(BOARD_HAS_NB)
-NBConnectionHandler conMan(cf_sim_pin, cf_sim_apn, cf_sim_username, cf_sim_password);   // Arduino_NBConnectionHandler.cpp
+//NBConnectionHandler conMan(cf_sim_pin, cf_sim_apn, cf_sim_username, cf_sim_password);   // Arduino_NBConnectionHandler.cpp
+NBConnectionHandler conMan(cf_sim_pin);
 NBClient client(false);    // client(true); for debug else false
 NBScanner scanner(false);  // scanner(true); for debug else false
 NBModem modem;
@@ -302,7 +303,17 @@ void onNetworkConnect() {
  * ======================================================================================================================
  */
 void onNetworkDisconnect() {
-  Output(F("NW:Disconnect"));
+  HeartBeat();
+#if defined(BOARD_HAS_NB)
+  Output(F("NW:Disconnect - Reseting Modem!"));
+  modem.hardReset();
+#else
+  Output(F("NW:Disconnect - Restarting Modem!"));
+  modem.restart();
+#endif 
+  
+  Output(F("NW:Disconnect - Waiting 10s"));
+  delay(10000); // Give time for modem to reset
 }
 
 /*
@@ -311,7 +322,19 @@ void onNetworkDisconnect() {
  * ======================================================================================================================
  */
 void onNetworkError() {
-  Output(F("NW:Error!"));
+  HeartBeat();
+#if defined(BOARD_HAS_NB)
+  Output(F("NW:Error - Reseting Modem!"));
+  modem.hardReset();
+#else
+  Output(F("NW:Error - Restarting Modem!"));
+  modem.restart();
+#endif
+
+  Output(F("NW:Error - Waiting 10s"));
+  delay(10000); // Give time for modem to reset
+  
+  Output(F("NW:Error - Calling Connect"));
   conMan.connect(); // Try some modem recovery, so next call to check() we will run init() and start connection process all over
   PrintModemIMEI(); // Ask the modem something to see if it is alive
 }

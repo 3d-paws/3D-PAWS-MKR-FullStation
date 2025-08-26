@@ -559,18 +559,23 @@ void setup()
     Output(F("N2S:NF"));
   }
 
-
-  // Need to set connection variables and override from the call to  conMan(cf_sim_pin, "super", cf_sim_username, cf_sim_password);
-#if defined(BOARD_HAS_NB)
-  conMan.NBResetVariables(cf_sim_pin, cf_sim_apn, cf_sim_username, cf_sim_password);
-#elif defined(BOARD_HAS_GSM)
-  conMan.GSMResetVariables(cf_sim_pin, cf_sim_apn, cf_sim_username, cf_sim_password);
-#endif
-
   Output(F("CM:INIT"));   
   conMan.addCallback(NetworkConnectionEvent::CONNECTED, onNetworkConnect);
   conMan.addCallback(NetworkConnectionEvent::DISCONNECTED, onNetworkDisconnect);
   conMan.addCallback(NetworkConnectionEvent::ERROR, onNetworkError);  
+
+  /* By using updateTimeoutInterval I can change the timeout value for a specific
+   * state of the connection handler
+   */
+                                                                               // Defaults in Milliseconds
+  //conMan.updateTimeoutInterval(NetworkConnectionState::INIT, 8000);          // 4000
+  //conMan.updateTimeoutInterval(NetworkConnectionState::CONNECTING, 1000);    // 500
+  //conMan.updateTimeoutInterval(NetworkConnectionState::CONNECTED, 20000);    // 10000
+  //conMan.updateTimeoutInterval(NetworkConnectionState::DISCONNECTING, 200);  // 100
+  //conMan.updateTimeoutInterval(NetworkConnectionState::DISCONNECTED, 2000);  // 1000
+  //conMan.updateTimeoutInterval(NetworkConnectionState::CLOSED, 2000);        // 1000
+  //conMan.updateTimeoutInterval(NetworkConnectionState::ERROR, 2000);         // 1000
+
   
   Output(F("CM:CHECK"));
   ConnectionState = conMan.check();  

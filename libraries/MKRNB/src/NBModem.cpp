@@ -63,3 +63,8 @@ String NBModem::getICCID()
 
   return iccid;
 }
+
+void NBModem::hardReset()
+{
+  MODEM.hardReset();
+}

@@ -42,6 +42,9 @@ public:
       @return SIM ICCID number
    */
   String getICCID();
+
+  /* ICDP Added */
+  void hardReset();
 };
 
 #endif

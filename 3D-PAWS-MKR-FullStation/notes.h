@@ -67,59 +67,20 @@
 
  /*
   * ======================================================================================================================
-  * Modification to Arduino_ConnectionHandler
-  *   The ConnectionHandler method is called passing unset parameters. After reding config file we have the paramteres
-  *   The below adds a function to reset the private variables to those set by the config file.
+  * Modification to MKRNB
   * ======================================================================================================================
   */
-/*
-  Arduino/libraries/Arduino_ConnectionHandler/src
-  
-  Arduino_GSMConnectionHandler.h
-    public:
-    void GSMResetVariables(char *pin, char *apn, char *login, char *pass); // Added by ICDP
 
-  Arduino_GSMConnectionHandler.cpp
-    PUBLIC MEMBER FUNCTIONS
-    // Added by ICDP
-    void GSMConnectionHandler::GSMResetVariables(char *pin, char *apn, char *login, char *pass)
-    {
-      Debug.print(DBG_INFO, F("GSMResetVariables(START)"));
-      _pin   = pin;
-      _apn   = apn;
-      _login = login;
-      _pass  = pass;
-      Debug.print(DBG_INFO, _pin);
-      Debug.print(DBG_INFO, _apn);
-      Debug.print(DBG_INFO, _login);
-      Debug.print(DBG_INFO, _pass);
-      Debug.print(DBG_INFO, F("GSMResetVariables(END)"));
-    }
-    // Added by ICDP
+  // The Arduino MKR NB 1500 modem reset pin is SARA_RESETN, a GPIO connected to the modem RESET_N pin.
+  // MKRNB/src/NBModem.h - Modified Added Below
+  //   /* ICDP Added */
+  // void hardReset();
 
-  Arduino_NBConnectionHandler.h
-    public:
-    void NBResetVariables(char *pin, char *apn, char *login, char *pass); // Added by ICDP
-
-  Arduino_NBConnectionHandler.cpp
-    PUBLIC MEMBER FUNCTIONS
-    // Added by ICDP
-    void NBConnectionHandler::NBResetVariables(char *pin, char *apn, char *login, char *pass)
-    {
-      Debug.print(DBG_INFO, F("NBResetVariables(START)"));
-      _pin   = pin;
-      _apn   = apn;
-      _login = login;
-      _pass  = pass;
-      Debug.print(DBG_INFO, _pin);
-      Debug.print(DBG_INFO, _apn);
-      Debug.print(DBG_INFO, _login);
-      Debug.print(DBG_INFO, _pass);
-      Debug.print(DBG_INFO, F("NBResetVariables(END)"));
-    }
-    // Added by ICDP
- */
- 
+  // MKRNB/src/NBModem.cpp - Modified Added Below
+  // void NBModem::hardReset()
+  // {
+  //   MODEM.hardReset();
+  // }
  /*
   * ======================================================================================================================
   * Adding SPI1 and Wire1 to MKR NB 1500  and will use modified library RF9X-RK-SPI1
