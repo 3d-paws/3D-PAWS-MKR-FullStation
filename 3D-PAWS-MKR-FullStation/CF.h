@@ -37,10 +37,10 @@ aes_pkey=10FE2D3C4B5A6978
 aes_myiv=01234567
 
 # This unit's LoRa ID for Receiving and Sending Messages
-lora_unitid=1
+lora_unitid=1:
 
 # You can set transmitter power from 5 to 23 dBm, default is 13
-lora_txpwr=23
+lora_txpwr=5
 
 # Valid entries are 433, 866, 915
 lora_freq=915

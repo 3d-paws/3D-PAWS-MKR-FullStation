@@ -6,8 +6,12 @@
 
 webserver=
 webserver_port=80
+webserver_path=
 apikey=
 instrument_id=
+
+# Method 0=GET 1=POST
+webserver_method=0
 
 sim_pin=
 sim_apn=
@@ -29,8 +33,19 @@ aes_myiv=1234567
 lora_unitid=1
 
 # Transmitter power from 5 to 23 dBm, default is 13
-lora_txpower=23
+lora_txpower=5
 
 # Valid entries are 433, 866, 915
 lora_freq=915
+
+# Rain Gauges
+rg1_enable=0
+rg2_enable=0
+
+# Distance Sensor
+ds_enable=0
+ds_baseline=0
+
+# Observation Periods 1,2,5,6,10,15,20,30
+obs_period=2
 
