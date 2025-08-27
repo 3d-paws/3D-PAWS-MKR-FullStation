@@ -310,6 +310,7 @@ int OBS_PubFailCnt = 0;
  
 unsigned long Time_of_obs = 0;         // unix time of observation
 unsigned long Time_of_next_obs = 0;    // time of next observation in ms
+unsigned long Time_of_last_hardreset=0;
 
 /*
  * ======================================================================================================================
@@ -645,6 +646,10 @@ void setup()
   wbgt_initialize();
 
   Output(F("CM:CHECK"));
+  // When not connected to a cellular network, conMan.check(); may hang or block for a long time because it internally 
+  // waits for network registration or state changes that can take a significant timeout period on NB-IoT modems like 
+  // the MKR NB 1500. This behavior has been reported by users experiencing long delays, sometimes many seconds or even 
+  // minutes, during failed network attempts or no coverage situations.
   ConnectionState = conMan.check();
   Output(F("CM:CHECK AFTER"));
   WaitForNetworkConnection(2); // Let wait on the network to come online
@@ -747,6 +752,8 @@ void loop()
 
       Output(F("Publish Fail - Waiting 12s"));
       delay(12000); // Give time for modem to reset
+
+      Time_of_last_hardreset = millis();
 
       Output(F("Publish Fail - Calling Connect"));
       conMan.connect(); // Try some modem recovery, so next call to check() we will run init() and start connection process all over

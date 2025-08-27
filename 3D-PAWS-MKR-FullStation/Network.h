@@ -321,16 +321,19 @@ void onNetworkDisconnect() {
 */
 void onNetworkError() {
   HeartBeat();
+  if ((millis() - Time_of_last_hardreset) > (60*5*1000)) {
+     
 #if defined(BOARD_HAS_NB)
-  Output(F("NW:Error - Resetting Modem!"));
-  modem.hardReset();
+    Output(F("NW:Error - Resetting Modem!"));
+    modem.hardReset();
 #else
-  Output(F("NW:Error - Restarting Modem!"));
-  modem.restart();
+    Output(F("NW:Error - Restarting Modem!"));
+    modem.restart();
 #endif
-
-  Output(F("NW:Error - Waiting 12s"));
-  delay(12000); // Give time for modem to reset
+    Output(F("NW:Error - Waiting 12s"));
+    delay(12000); // Give time for modem to reset
+    Time_of_last_hardreset = millis();
+  }
 
   Output(F("NW:Error - Calling Connect"));
   conMan.connect(); // Try some modem recovery, so next call to check() we will run init() and start connection process all over
