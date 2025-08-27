@@ -1,5 +1,5 @@
 #define COPYRIGHT "Copyright [2025] [University Corporation for Atmospheric Research]"
-#define VERSION_INFO "MKRFS-250817"  // MKR Full Station - Release Date
+#define VERSION_INFO "MKRFS-250826"  // MKR Full Station - Release Date
 
 // 3D-PAWS-MKR-FullStation
 // Board Manager Package: Arduino SAMD Boards (32-bits ARM Cortex-M0+)
@@ -282,7 +282,7 @@ RTCZero stc;
  *  Globals
  * ======================================================================================================================
  */
-NetworkConnectionState ConnectionState;
+NetworkConnectionState ConnectionState = NetworkConnectionState::DISCONNECTED;
 unsigned int NoNetworkLoopCycleCount = 0;
 bool NetworkHasBeenOperational = false;  // Get set if we have successfully transmitted OBS since power on
 
@@ -305,7 +305,7 @@ bool SerialConsoleEnabled = false;  // Variable for serial monitor control
 
 int DailyRebootCountDownTimer;
 
-#define PUBFAILBEFOREREBOOT 4
+#define PUB_FAILS_BEFORE_ACTION 8
 int OBS_PubFailCnt = 0;
  
 unsigned long Time_of_obs = 0;         // unix time of observation
@@ -575,11 +575,11 @@ void setup()
   //conMan.updateTimeoutInterval(NetworkConnectionState::DISCONNECTED, 2000);  // 1000
   //conMan.updateTimeoutInterval(NetworkConnectionState::CLOSED, 2000);        // 1000
   //conMan.updateTimeoutInterval(NetworkConnectionState::ERROR, 2000);         // 1000
-
-  
-  Output(F("CM:CHECK"));
-  ConnectionState = conMan.check();  
-  Output(F("CM:CHECK AFTER"));
+        
+  Output(F("CM:Connect"));
+  nbAccess.setTimeout(10000);
+  conMan.connect();  
+  Output(F("CM:Connect After"));
   
   // Initialize System Time Clock
   Output(F("STC:INIT"));
@@ -644,9 +644,9 @@ void setup()
   hi_initialize();
   wbgt_initialize();
 
+  Output(F("CM:CHECK"));
   ConnectionState = conMan.check();
-
-  Output(F("CM:CHECK AGAIN"));
+  Output(F("CM:CHECK AFTER"));
   WaitForNetworkConnection(2); // Let wait on the network to come online
 
   // Initialize RH_RF95 LoRa Module
@@ -734,10 +734,20 @@ void loop()
     }
 
     // Check to see if we should reset the modem after so many publish fails
-    if (OBS_PubFailCnt >= PUBFAILBEFOREREBOOT) {
+    if (OBS_PubFailCnt >= PUB_FAILS_BEFORE_ACTION) {
       Output(F("Publish Fail:Reboot"));
-      delay (5000);
-      conMan.disconnect();  // Disconnect calls NB.shutdown() which calls send("AT+CPWROFF")    
+
+#if defined(BOARD_HAS_NB)
+      Output(F("Publish Fail - Reseting Modem!"));
+      modem.hardReset();
+#else
+      Output(F("Publish Fail - Restarting Modem!"));
+      modem.restart();
+#endif
+
+      Output(F("Publish Fail - Waiting 10s"));
+      delay(10000); // Give time for modem to reset
+
 /*   
       digitalWrite(REBOOT_PIN, HIGH);
       // Should not get here

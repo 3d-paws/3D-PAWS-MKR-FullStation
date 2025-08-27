@@ -17,6 +17,9 @@ webserver_path=
 apikey=
 instrument_id=
 
+# 0=GET 1=POST
+webserver_method=0
+
 sim_pin=
 sim_apn=
 sim_username=
@@ -60,6 +63,7 @@ int  cf_webserver_port=80;
 char *cf_webserver_path="";
 char *cf_apikey="";
 int cf_instrument_id=0;
+int cf_webserver_method=0;
 char *cf_sim_pin="";
 char *cf_sim_apn="";
 char *cf_sim_username="";

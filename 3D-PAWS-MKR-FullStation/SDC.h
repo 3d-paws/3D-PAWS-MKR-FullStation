@@ -405,6 +405,12 @@ void SD_ReadConfigFile() {
   
   cf_instrument_id  = SD_findInt(F("instrument_id"));
   sprintf(msgbuf, "CF:%s=[%d]", F("instrument_id"), cf_instrument_id); Output (msgbuf);
+
+  cf_webserver_method = SD_findInt(F("webserver_method"));
+  if ((cf_webserver_method < 0) || (cf_webserver_method > 1)) {
+    cf_webserver_method = 0;
+  }
+  sprintf(msgbuf, "CF:%s=[%d]", F("webserver_method"), cf_webserver_method); Output (msgbuf);
   
   cf_sim_apn        = SD_findCharStr(F("sim_apn"));
   sprintf(msgbuf, "CF:%s=[%s]", F("sim_apn"), cf_sim_apn); Output (msgbuf);
@@ -469,11 +475,11 @@ void SD_ReadConfigFile() {
   sprintf(msgbuf, "CF:%s=[%d]", F("ds_enable"), cf_ds_enable); Output (msgbuf);
 
   cf_ds_baseline = SD_findInt(F("ds_baseline"));
-  sprintf(msgbuf, "CF:ds_baseline=[%d]", cf_ds_baseline); Output (msgbuf);
+  sprintf(msgbuf, "CF:%s=[%d]", F("ds_baseline"), cf_ds_baseline); Output (msgbuf);
 
   cf_obs_period   = SD_findInt(F("obs_period"));
   if (cf_obs_period == 0) {
     cf_obs_period = 1;
   }
-  sprintf(msgbuf, "CF:obs_period=[%d]", cf_obs_period); Output (msgbuf);
+  sprintf(msgbuf, "CF:%s=[%d]", F("obs_period"), cf_obs_period); Output (msgbuf);
 }

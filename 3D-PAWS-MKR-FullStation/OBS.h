@@ -86,30 +86,31 @@ bool OBS_Send(char *obs)
       NoNetworkLoopCycleCount = 0;  // reset the counter to prevent rebooting 
       Output(F("OBS:HTTP CONNECTED"));
 
-// Code for HTTP GET, Sill have to deal with obs
-      json_to_get_string_inplace(cf_webserver_path, obs);
-      Serial_writeln (obs);
+      // 0=GET, 1=POST
+      if (cf_webserver_method == 0) { 
+        json_to_get_string_inplace(cf_webserver_path, obs);
+        Serial_writeln (obs);
 
-      // Make a HTTP GET request:
-      client.print("GET ");
-      client.print(obs); // path
-      client.println(" HTTP/1.1");
-      client.print("Host: ");
-      client.println(cf_webserver);
-      client.println("Connection: close");
-      client.println();
-#ifdef NOWAY    
-      // Construct HTTP POST request    
-      client.println(String("POST ") + cf_webserver_path + " HTTP/1.1");
-      client.println(String("Host: ") + cf_webserver);
-      client.println("Content-Type: application/json");
-      client.print("Content-Length: ");
-      client.println(strlen(obs));
-      client.println("Connection: close");
-      client.println();
-      client.println(obs);
-#endif
-
+        // Make a HTTP GET request:
+        client.print("GET ");
+        client.print(obs); // path
+        client.println(" HTTP/1.1");
+        client.print("Host: ");
+        client.println(cf_webserver);
+        client.println("Connection: close");
+        client.println();
+      }
+      else { 
+        // Construct HTTP POST request    
+        client.println(String("POST ") + cf_webserver_path + " HTTP/1.1");
+        client.println(String("Host: ") + cf_webserver);
+        client.println("Content-Type: application/json");
+        client.print("Content-Length: ");
+        client.println(strlen(obs));
+        client.println("Connection: close");
+        client.println();
+        client.println(obs);
+      }
 
       Output(F("OBS:HTTP SENT"));
 

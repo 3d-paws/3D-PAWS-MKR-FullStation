@@ -29,15 +29,6 @@
  * NB_TIMEOUT = 30000;
  *  
  * If you see "SIM not present or wrong PIN" check the antenna connection. 
- *  
- * Check intervals when calling check() from your program
- *   INIT          100
- *   CONNECTING    500
- *   CONNECTED     10000
- *   DISCONNECTING 100
- *   DISCONNECTED  1000
- *   CLOSED        1000
- *   ERROR         1000
  * ======================================================================================================================
  */
 
@@ -46,10 +37,17 @@ unsigned long LastTimeConManCalled = 0;   // used to control how often we trey a
 #if defined(BOARD_HAS_NB)
 //NBConnectionHandler conMan(cf_sim_pin, cf_sim_apn, cf_sim_username, cf_sim_password);   // Arduino_NBConnectionHandler.cpp
 NBConnectionHandler conMan(cf_sim_pin);
-NBClient client(false);    // client(true); for debug else false
+
+//NBClient client(false);    // client(true); for debug else false
 NBScanner scanner(false);  // scanner(true); for debug else false
+
+NBClient client(true); 
+// NBScanner scanner(true);
+
 NBModem modem;
 NB nb_gsm(false);              // nb(true); for debug else false
+NB nbAccess;
+
 
 #elif defined(BOARD_HAS_GSM)
 GSMConnectionHandler conMan(cf_sim_pin, cf_sim_apn, cf_sim_username, cf_sim_password);   // Arduino_GSMConnectionHandler.cpp
