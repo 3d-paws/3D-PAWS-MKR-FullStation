@@ -114,7 +114,7 @@ bool OBS_Send(char *obs)
 
       Output(F("OBS:HTTP SENT"));
 
-      // Check every 500ms for data, up to 3 minutes. While waiting take Wind Readings every 1s
+      // Check every 500ms for data, up to 2 minutes. While waiting take Wind Readings every 1s
       i=0;
       exit_timer = 0;
       Wind_TakeReading();
@@ -127,7 +127,7 @@ bool OBS_Send(char *obs)
           i=0;
 
           // Prevent infinate waiting - not sure if this is needed but can't hurt
-          if (++exit_timer >= 60) { // after 3 minutes lets call it quits,  was 180
+          if (++exit_timer >= 60) { // after 2 minutes lets call it quits
             break;
           }
         }

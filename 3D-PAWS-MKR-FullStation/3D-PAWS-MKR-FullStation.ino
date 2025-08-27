@@ -738,15 +738,18 @@ void loop()
       Output(F("Publish Fail:Reboot"));
 
 #if defined(BOARD_HAS_NB)
-      Output(F("Publish Fail - Reseting Modem!"));
+      Output(F("Publish Fail - Resetting Modem!"));
       modem.hardReset();
 #else
       Output(F("Publish Fail - Restarting Modem!"));
       modem.restart();
 #endif
 
-      Output(F("Publish Fail - Waiting 10s"));
-      delay(10000); // Give time for modem to reset
+      Output(F("Publish Fail - Waiting 12s"));
+      delay(12000); // Give time for modem to reset
+
+      Output(F("Publish Fail - Calling Connect"));
+      conMan.connect(); // Try some modem recovery, so next call to check() we will run init() and start connection process all over
 
 /*   
       digitalWrite(REBOOT_PIN, HIGH);
