@@ -460,13 +460,11 @@ void SD_ReadConfigFile() {
   cf_aes_myiv    = SD_findLong(F("aes_myiv"));
   sprintf(msgbuf, "CF:%s=[%lu]", F("aes_myiv"), cf_aes_myiv); Output (msgbuf);
 
-  // Rain
+  // Rain1
   cf_rg1_enable   = SD_findInt(F("rg1_enable"));
-  if (cf_rg1_enable == 0) {
-    cf_rg1_enable = 1;
-  }
   sprintf(msgbuf, "CF:%s=[%d]", F("rg1_enable"), cf_rg1_enable); Output (msgbuf);
 
+  // Rain2
   cf_rg2_enable   = SD_findInt(F("rg2_enable"));
   sprintf(msgbuf, "CF:%s=[%d]", F("rg2_enable"), cf_rg2_enable); Output (msgbuf);
 

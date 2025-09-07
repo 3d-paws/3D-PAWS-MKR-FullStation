@@ -137,18 +137,43 @@ bool OBS_Send(char *obs)
         
       // Read first line of HTTP Response, then get out of the loop
       r=0;
+      unsigned long startTime = millis();
+      unsigned long timeout = 5000; // 5 seconds timeout 
+      bool read_negative_one=false; 
       while ((client.connected() || client.available() ) && r<63 && !posted) {
-        response[r] = client.read();
-        response[++r] = 0;  // Make string null terminated
-        if (strstr(response, "200 OK") != NULL) { // Does response includes a "200 OK" substring?
-          NetworkHasBeenOperational = true;
-          posted = true;
-          break;
+        if (client.available()) {
+          int val = client.read(); //gets byte from buffer 0 = no data, -1 means error
+          if (val == -1) {
+            // No more data, exit loop
+            read_negative_one=true;
+            Serial_writeln("");
+            Output(F("READ -1"));
+            break;           
+          }
+          else {
+            response[r] = (char)val;
+            response[++r] = 0;  // Make string null terminated
+            if (strstr(response, "200 OK") != NULL) { // Does response includes a "200 OK" substring?
+              NetworkHasBeenOperational = true;
+              posted = true;
+              break;
+            }
+            if ((response[r-1] == 0x0A) || (response[r-1] == 0x0D)) { // LF or CR
+              // if we got here then we never saw the 200 OK
+              Serial_writeln("");
+              Output(F("OBS:HTTP RESP EOL"));
+              break;
+            }
+          }
         }
-        if ((response[r-1] == 0x0A) || (response[r-1] == 0x0D)) { // LF or CR
-          // if we got here then we never saw the 200 OK
-          Output(F("OBS:HTTP RESP EOL"));
-          break;
+        else {
+          // No data available yet, check timeout
+          if (millis() - startTime > timeout) {
+            Serial_writeln("");
+            Serial_writeln(F("OBS:HTTP RESP TIMEOUT"));
+            break;
+          }
+          delay(10); // very short delay to prevent tight loop         
         }
       }
 
@@ -157,25 +182,50 @@ bool OBS_Send(char *obs)
       // Print response as hex
       Output(buf);
       Serial_write(response, HEX);
-      Serial_writeln("");
+      Serial_write("");
      
       // Early closure of a network connection on the MKR NB 1500 can contribute to communication 
       // instability or the need for modem resets in some edge cases due to how the firmware handles 
       // connection states
       
       // Read rest of the response after first line - I have seen this hang with unknow characters be read
-      int count=0;      
-      while (client.connected() || client.available()) { //connected or data available
-         char c = client.read(); //gets byte from buffer
-         Serial_write (c);
-         if (++count > 1000){
-           Serial_writeln("");
-           Serial_write("OBS:HTTP RESP BREAK");
-           break;
-         }
+      if (!read_negative_one) {
+        int count=0;
+        startTime = millis();   
+        timeout = 5000; // 5 seconds timeout
+        while (client.connected() || client.available()) { //connected or data available
+          if (client.available()) {
+            int val = client.read(); //gets byte from buffer 0 = no data, -1 means error
+            if (val == -1) {
+              // No more data, exit loop
+              Serial_writeln("");
+              Output(F("READ -1"));
+              break;           
+            }
+            else {
+              char c = (char)val;
+              Serial_write (c);
+              if (++count > 1000){
+                Serial_writeln("");
+                Output("OBS:HTTP RESP BREAK");
+                break;
+              }
+              // Reset startTime each time new data is received
+              startTime = millis();
+            }
+          }
+          else {
+            // No data available yet, check timeout
+            if (millis() - startTime > timeout) {
+              Serial_writeln("");
+              Output(F("OBS:HTTP RESP TIMEOUT REST"));
+              break;
+            }
+            delay(10); // very short delay to prevent tight loop
+          }  
+        }
+        Serial_writeln("");
       }
-      Serial_writeln("");
-
 
       // Server disconnected from clinet. No data left to read. Disconnect client from the server
       client.stop();

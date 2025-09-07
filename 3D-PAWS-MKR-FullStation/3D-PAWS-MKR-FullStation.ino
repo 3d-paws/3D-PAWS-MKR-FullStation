@@ -1,12 +1,15 @@
 #define COPYRIGHT "Copyright [2025] [University Corporation for Atmospheric Research]"
-#define VERSION_INFO "MKRFS-250826"  // MKR Full Station - Release Date
+#define VERSION_INFO "MKRFS-250907"  // MKR Full Station - Release Date
 
+/*
+ *======================================================================================================================
 // 3D-PAWS-MKR-FullStation
 // Board Manager Package: Arduino SAMD Boards (32-bits ARM Cortex-M0+)
 // Set Board Type to: Arduino MKR NB 1500
 // Set Board Type to: Arduino MKR GSM 1400
 // -*- mode: C++ -*-
 
+// Author: Robert J Bubon
 // Version History
 //   2022-04-28 RJB Based on GSM_StreamGauge_V6
 //   2022-07-24 RJB All working but LoRa
@@ -86,6 +89,8 @@
 //                  Data is now stored as JSON and converted to a GET URL for transmission to Chords.
 //                  Added clearing of EEPROM rain totals CRT.TXT. If file exists, rain totals cleared and file
 //                    removed.
+//   2025-09-07 RJB Maybe found the bug that hangs when sending observations. Reading the HTTP response
+//                  needed check for -1 and 5 second time out if no character read.
 //
 //  Note: The below 2 cases is where I have seen a reboot not resolving a modem problem.
 //        Resolution required removing of power (USB and Battery) to clean up the modem.
@@ -148,7 +153,7 @@
 // EEPROM  https://www.adafruit.com/product/5146
 
 // CHORDS Portal https://earthcubeprojects-chords.github.io/chords-docs/
-/*
+
  * Interrupt Pins 0, 1, 4, 5, 6, 7, 8, (16/A1), (17/A2)
  * A0   = Serial Console (Ground to Enable)
  * A1*  = Interrupt For Rain gauge 2  
@@ -171,6 +176,8 @@
  * D10  = SPI0 MISO - SD Card
  * D11  = I2C SDA
  * D12  = I2C CLK
+
+ * ======================================================================================================================
  */
 
 #define STOP_IF_SDNF false         // Stop booting if SD Not Found
@@ -757,13 +764,6 @@ void loop()
 
       Output(F("Publish Fail - Calling Connect"));
       conMan.connect(); // Try some modem recovery, so next call to check() we will run init() and start connection process all over
-
-/*   
-      digitalWrite(REBOOT_PIN, HIGH);
-      // Should not get here
-      delay (1000);
-      digitalWrite(REBOOT_PIN, LOW);
-*/
       OBS_PubFailCnt = 0; // Reset count incase reboot fails
     }
     

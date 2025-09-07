@@ -17,7 +17,7 @@ webserver_path=
 apikey=
 instrument_id=
 
-# 0=GET 1=POST
+# Method 0=GET 1=POST 
 webserver_method=0
 
 sim_pin=
