@@ -1,5 +1,5 @@
 #define COPYRIGHT "Copyright [2025] [University Corporation for Atmospheric Research]"
-#define VERSION_INFO "MKRFS-250907"  // MKR Full Station - Release Date
+#define VERSION_INFO "MKRFS-250907-1"  // MKR Full Station - Release Date
 
 /*
  *======================================================================================================================
@@ -91,6 +91,7 @@
 //                    removed.
 //   2025-09-07 RJB Maybe found the bug that hangs when sending observations. Reading the HTTP response
 //                  needed check for -1 and 5 second time out if no character read.
+//                  Fixed rain total eeprom initialization
 //
 //  Note: The below 2 cases is where I have seen a reboot not resolving a modem problem.
 //        Resolution required removing of power (USB and Battery) to clean up the modem.
@@ -598,7 +599,6 @@ void setup()
   rtc_initialize();
 
   EEPROM_initialize();
-  SD_ClearRainTotals();
 
   obs_interval_initialize();
 
@@ -708,7 +708,14 @@ void loop()
     // This will be invalid if the RTC was bad at poweron and we have not connected to Cell network
     // Upon connection to cell network system time is set and this becomes valid.
     if (STC_valid) {
-      bool TakeOBS=false;  
+      bool TakeOBS=false;
+
+      // Delayed initialization. We need a valid clock before we can validate the EEPROM
+      if (eeprom_exists && !eeprom_valid) {
+        EEPROM_Validate();
+        EEPROM_Dump();
+        SD_ClearRainTotals(); 
+      }
  
       // Perform an Observation, save in OBS structure, Write to SD
       if (millis() >= Time_of_next_obs) {

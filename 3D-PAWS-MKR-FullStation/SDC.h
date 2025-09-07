@@ -183,6 +183,7 @@ void SD_ClearRainTotals() {
         Output (F("CRT:OK-CLR"));
         uint32_t current_time = stc.getEpoch();
         EEPROM_ClearRainTotals(current_time);
+        EEPROM_Dump();
       }
       else {
         Output (F("CRT:ERR-RM"));

@@ -68,6 +68,15 @@ bool OBS_Send(char *obs)
   char buf[96];
   int r, i=0, exit_timer=0;
   bool posted = false;
+
+  // Convert the JSON to A GET 
+  if (cf_webserver_method == 0) { 
+    if (!json_to_get_string_inplace(cf_webserver_path, obs)) {
+      Output(F("OBS:JSON->GET ERR"));
+      Output(F("OBS:LOST"));
+      return (true);
+    }
+  }
   
   unsigned long nt = GetCellEpochTime(); // Getting the cell network time does a bunch of checks on if the Network is up.
                                          // So a return of 0 says there are problems, and we should not try to transmit.
@@ -88,7 +97,6 @@ bool OBS_Send(char *obs)
 
       // 0=GET, 1=POST
       if (cf_webserver_method == 0) { 
-        json_to_get_string_inplace(cf_webserver_path, obs);
         Serial_writeln (obs);
 
         // Make a HTTP GET request:
@@ -1079,7 +1087,7 @@ void OBS_Do() {
   
   Output(F("OBS_BUILD()"));
   
-  if (OBS_Build_JSON()) { // This will also print the JSON out
+  if (OBS_Build_JSON()) { // This will also print the JSON out - obsbuf has the json
     // At this point, the obs data structure has been filled in with observation data
 
     Output(F("OBS->SD"));

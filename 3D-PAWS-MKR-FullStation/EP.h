@@ -4,6 +4,8 @@
  * ======================================================================================================================
  */
 
+ extern uint32_t SD_n2s_max_filesz;
+
 /*
  * ======================================================================================================================
  *  EEPROM NonVolitileMemory - stores rain totals in persistant memory
@@ -57,14 +59,23 @@ void EEPROM_ChecksumUpdate() {
 
 /* 
  *=======================================================================================================================
- * EEPROM_ChecksumValid()
+ * EEPROM_Valid()
  *=======================================================================================================================
  */
-bool EEPROM_ChecksumValid() {
+bool EEPROM_Valid() {
   unsigned long checksum = EEPROM_ChecksumCompute();
 
   if (checksum == eeprom.checksum) {
-    return (true);
+    if ((eeprom.rgt1 < 0.0) ||
+        (eeprom.rgp1 < 0.0) ||
+        (eeprom.rgt2 < 0.0) ||
+        (eeprom.rgp2 < 0.0) ||
+        (eeprom.n2sfp > (SD_n2s_max_filesz + 1000) )) {
+      return (false);    
+    }
+    else {
+      return (true);
+    }
   }
   else {
     return (false);
@@ -100,14 +111,19 @@ void EEPROM_ClearRainTotals(uint32_t current_time) {
  *=======================================================================================================================
  */
 void EEPROM_Validate() {
+
+  if (!STC_valid) {
+    return;
+  }
+  
   uint32_t current_time = stc.getEpoch();
 
   eeprom_i2c.read(eeprom_address, eeprom_ptr, sizeof(eeprom));
 
-  if (!EEPROM_ChecksumValid() || SerialConsoleEnabled) {
+  if (!EEPROM_Valid()) {
     EEPROM_ClearRainTotals(current_time);
     if (SerialConsoleEnabled) {
-      Output("EEPROM CLEARED:SCE"); // Serial Console Enabled
+      Output(F("EEPROM CLEARED:SCE")); // Serial Console Enabled
     }
     else {
       Output(F("EEPROM CLEARED:CSE")); // Checksum error
@@ -293,7 +309,7 @@ void EEPROM_initialize() {
     Output(F("EEPROM OK"));
     SystemStatusBits &= ~SSB_EEPROM; // Turn Off Bit
     eeprom_exists = true;
-    EEPROM_Validate();
+    // EEPROM_Validate(); // Have to do this later when we have a valid System Clock
     EEPROM_Dump();
   } else {
     Output(F("EEPROM NF"));

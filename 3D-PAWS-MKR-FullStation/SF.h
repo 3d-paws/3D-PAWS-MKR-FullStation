@@ -214,7 +214,7 @@ bool json_to_get_string_inplace(const char *cf_webserver_path, char *obs) {
         snprintf(tmp, sizeof(tmp), "%d", kv.value().as<int>());
         safe_strcat(temp, sizeof(temp), tmp);
       } else if (kv.value().is<float>()) {
-        snprintf(tmp, sizeof(tmp), "%f", kv.value().as<float>());
+        snprintf(tmp, sizeof(tmp), "%.4f", kv.value().as<float>());
         safe_strcat(temp, sizeof(temp), tmp);
       }
     }
