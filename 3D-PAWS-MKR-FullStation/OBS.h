@@ -435,7 +435,7 @@ void OBS_Take() {
     raingauge1_interrupt_stime = millis();
     raingauge1_interrupt_ltime = 0; // used to debounce the tip
     // QC Check - Max Rain for period is (Observations Seconds / 60s) *  Max Rain for 60 Seconds
-    rg1 = (isnan(rg1) || (rg1 < QC_MIN_RG) || (rg1 > ((rg1ds / 60) * QC_MAX_RG)) ) ? QC_ERR_RG : rg1;
+    rg1 = (isnan(rg1) || (rg1 < QC_MIN_RG) || (rg1 > (((float)rg1ds / 60) * QC_MAX_RG)) ) ? QC_ERR_RG : rg1;
   }
 
   // Rain Gauge 2 - Each tip is 0.2mm of rain
@@ -446,7 +446,7 @@ void OBS_Take() {
     raingauge2_interrupt_stime = millis();
     raingauge2_interrupt_ltime = 0; // used to debounce the tip
     // QC Check - Max Rain for period is (Observations Seconds / 60s) *  Max Rain for 60 Seconds
-    rg2 = (isnan(rg2) || (rg2 < QC_MIN_RG) || (rg2 > ((rg2ds / 60) * QC_MAX_RG)) ) ? QC_ERR_RG : rg2;
+    rg2 = (isnan(rg2) || (rg2 < QC_MIN_RG) || (rg2 > (((float)rg2ds / 60) * QC_MAX_RG)) ) ? QC_ERR_RG : rg2;
   }
 
   if (cf_rg1_enable || cf_rg2_enable) {
@@ -1050,6 +1050,11 @@ void OBS_Take() {
     strcpy (obs.sensor[sidx].id, "tmsms4");
     obs.sensor[sidx].type = F_OBS;
     obs.sensor[sidx].f_obs = (float) multi.vwc[3];
+    obs.sensor[sidx++].inuse = true;
+
+    strcpy (obs.sensor[sidx].id, "tmsms5");
+    obs.sensor[sidx].type = F_OBS;
+    obs.sensor[sidx].f_obs = (float) multi.vwc[4];
     obs.sensor[sidx++].inuse = true;
 
     t = multi.temp[0];

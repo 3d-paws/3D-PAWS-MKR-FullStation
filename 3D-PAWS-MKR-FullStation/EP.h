@@ -235,9 +235,9 @@ void EEPROM_SaveUnreportedRain() {
     float rain1 = raingauge1_interrupt_count * 0.2;
     float rain2 = raingauge2_interrupt_count * 0.2;
     rgds = (millis()-raingauge1_interrupt_stime)/1000;  // seconds since last rain gauge observation logged
-    rain1 = (isnan(rain1) || (rain1 < QC_MIN_RG) || (rain1 > ((rgds / 60) * QC_MAX_RG)) ) ? QC_ERR_RG : rain1;
+    rain1 = (isnan(rain1) || (rain1 < QC_MIN_RG) || (rain1 > (((float)rgds / 60) * QC_MAX_RG)) ) ? QC_ERR_RG : rain1;
     rgds = (millis()-raingauge2_interrupt_stime)/1000;  // seconds since last rain gauge observation logged
-    rain2 = (isnan(rain2) || (rain2 < QC_MIN_RG) || (rain2 > ((rgds / 60) * QC_MAX_RG)) ) ? QC_ERR_RG : rain2;
+    rain2 = (isnan(rain2) || (rain2 < QC_MIN_RG) || (rain2 > (((float)rgds / 60) * QC_MAX_RG)) ) ? QC_ERR_RG : rain2;
     EEPROM_UpdateRainTotals(rain1, rain2);
   }
 }
