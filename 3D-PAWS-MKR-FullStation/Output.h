@@ -424,7 +424,7 @@ void Serial_Initialize() {
     if (!Serial) {
       OLED_write("Wait4 Serial Console");
     }
-    int countdown=60; // Wait N seconds for serial connection, then move on.
+    int countdown=10; // Wait N seconds for serial connection, then move on. - Normally 60
     while (!Serial && countdown) {
       HeartBeat(); // Provides 250ms delay
       Blink(1, 750);
