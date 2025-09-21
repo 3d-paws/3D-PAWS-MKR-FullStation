@@ -17,6 +17,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include "ECCX08Config.h"
 #include "ECCX08.h"
 
 #include "ASN1Utils.h"
@@ -160,4 +161,6 @@ String ECCX08JWSClass::sign(int slot, const String& header, const String& payloa
   return sign(slot, header.c_str(), payload.c_str());
 }
 
+#if !defined(ECCX08_DISABLE_JWS)
 ECCX08JWSClass ECCX08JWS;
+#endif

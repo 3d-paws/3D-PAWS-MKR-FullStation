@@ -39,7 +39,7 @@ bool RH_RF95::init()
 
     // Determine the interrupt number that corresponds to the interruptPin
     int interruptNumber = digitalPinToInterrupt(_interruptPin);
-    if (interruptNumber == NOT_AN_INTERRUPT) 
+    if (interruptNumber == NOT_AN_INTERRUPT)
 	return false;
 #ifdef RH_ATTACHINTERRUPT_TAKES_PIN_NUMBER
     interruptNumber = _interruptPin;

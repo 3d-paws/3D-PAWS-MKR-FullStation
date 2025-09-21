@@ -17,6 +17,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include "ECCX08Config.h"
 #include "PEMUtils.h"
 
 String PEMUtilsClass::base64Encode(const byte in[], unsigned int length, const char* prefix, const char* suffix)
@@ -68,4 +69,6 @@ String PEMUtilsClass::base64Encode(const byte in[], unsigned int length, const c
   return out;
 }
 
+#if !defined(ECCX08_DISABLE_PEM)
 PEMUtilsClass PEMUtils;
+#endif

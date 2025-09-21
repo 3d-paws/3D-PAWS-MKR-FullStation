@@ -62,7 +62,7 @@ int ECCX08Class::begin()
 
 void ECCX08Class::end()
 {
-  // First wake up the device otherwise the chip didn't react to a sleep commando
+  // First wake up the device otherwise the chip didn't react to a sleep command
   wakeup();
   sleep();
 #ifdef WIRE_HAS_END
@@ -548,6 +548,80 @@ int ECCX08Class::nonce(const byte data[])
   return challenge(data);
 }
 
+int ECCX08Class::incrementCounter(int counterId, long& counter)
+{
+  if (counterId < 0 || counterId > 1) {
+    return 0;
+  }
+
+  if (!wakeup()) {
+    return 0;
+  }
+
+  if (!sendCommand(0x24, 1, counterId)) {
+    return 0;
+  }
+
+  delay(20);
+
+  if (!receiveResponse(&counter, sizeof(counter))) {
+    return 0;
+  }
+
+  delay(1);
+  idle();
+
+  return 1;
+}
+
+long ECCX08Class::incrementCounter(int counterId)
+{
+  long counter;  // the counter can go up to 2,097,151
+
+  if(!incrementCounter(counterId, counter)) {
+    return -1;
+  }
+
+  return counter;
+}
+
+int ECCX08Class::readCounter(int counterId, long& counter)
+{
+  if (counterId < 0 || counterId > 1) {
+    return 0;
+  }
+
+  if (!wakeup()) {
+    return 0;
+  }
+
+  if (!sendCommand(0x24, 0, counterId)) {
+    return 0;
+  }
+
+  delay(20);
+
+  if (!receiveResponse(&counter, sizeof(counter))) {
+    return 0;
+  }
+
+  delay(1);
+  idle();
+
+  return 1;
+}
+
+long ECCX08Class::readCounter(int counterId)
+{
+  long counter;  // the counter can go up to 2,097,151
+
+  if(!readCounter(counterId, counter)) {
+    return -1;
+  }
+
+  return counter;
+}
+
 int ECCX08Class::wakeup()
 {
   _wire->setClock(_wakeupFrequency);
@@ -627,7 +701,7 @@ int ECCX08Class::challenge(const byte message[])
     return 0;
   }
 
-  // Nounce, pass through
+  // Nonce, pass through
   if (!sendCommand(0x16, 0x03, 0x0000, message, 32)) {
     return 0;
   }
@@ -807,7 +881,7 @@ int ECCX08Class::addressForSlotOffset(int slot, int offset)
 
 int ECCX08Class::sendCommand(uint8_t opcode, uint8_t param1, uint16_t param2, const byte data[], size_t dataLength)
 {
-  int commandLength = 8 + dataLength; // 1 for type, 1 for length, 1 for opcode, 1 for param1, 2 for param2, 2 for crc
+  int commandLength = 8 + dataLength; // 1 for type, 1 for length, 1 for opcode, 1 for param1, 2 for param2, 2 for CRC
   byte command[commandLength]; 
   
   command[0] = 0x03;
@@ -841,6 +915,12 @@ int ECCX08Class::receiveResponse(void* response, size_t length)
 
   // make sure length matches
   if (responseBuffer[0] != responseSize) {
+    // Clear the buffer
+    for (size_t i = 1; _wire->available(); i++) {
+      (void) _wire->read();
+    }
+    delay(1);
+    idle();
     return 0;
   }
 
@@ -851,9 +931,11 @@ int ECCX08Class::receiveResponse(void* response, size_t length)
   // verify CRC
   uint16_t responseCrc = responseBuffer[length + 1] | (responseBuffer[length + 2] << 8);
   if (responseCrc != crc16(responseBuffer, responseSize - 2)) {
+    delay(1);
+    idle();
     return 0;
   }
-  
+
   memcpy(response, &responseBuffer[1], length);
 
   return 1;

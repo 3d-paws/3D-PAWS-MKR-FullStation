@@ -1,22 +1,15 @@
 /*
-   This file is part of ArduinoIoTCloud.
+  This file is part of the Arduino_ConnectionHandler library.
 
-   Copyright 2019 ARDUINO SA (http://www.arduino.cc/)
+  Copyright (c) 2023 Arduino SA
 
-   This software is released under the GNU General Public License version 3,
-   which covers the main part of arduino-cli.
-   The terms of this license can be found at:
-   https://www.gnu.org/licenses/gpl-3.0.en.html
-
-   You can be released from the requirements of the above licenses by purchasing
-   a commercial license. Buying such a license is mandatory if you want to modify or
-   otherwise use the software for commercial activities involving the Arduino
-   software without disclosing the source code of your own applications. To purchase
-   a commercial license, send an email to license@arduino.cc.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 /******************************************************************************
-   INCLUDE
+  INCLUDE
  ******************************************************************************/
 
 #include "ConnectionHandlerDefinitions.h"
@@ -25,7 +18,7 @@
 #include "CatM1ConnectionHandler.h"
 
 /******************************************************************************
-   CTOR/DTOR
+  CTOR/DTOR
  ******************************************************************************/
 
 CatM1ConnectionHandler::CatM1ConnectionHandler()
@@ -49,7 +42,7 @@ CatM1ConnectionHandler::CatM1ConnectionHandler(
 }
 
 /******************************************************************************
-   PUBLIC MEMBER FUNCTIONS
+  PUBLIC MEMBER FUNCTIONS
  ******************************************************************************/
 
 unsigned long CatM1ConnectionHandler::getTime()
@@ -61,7 +54,7 @@ unsigned long CatM1ConnectionHandler::getTime()
 }
 
 /******************************************************************************
-   PROTECTED MEMBER FUNCTIONS
+  PROTECTED MEMBER FUNCTIONS
  ******************************************************************************/
 
 NetworkConnectionState CatM1ConnectionHandler::update_handleInit()
@@ -81,7 +74,7 @@ NetworkConnectionState CatM1ConnectionHandler::update_handleInit()
     _settings.catm1.band,
     _reset))
   {
-    Debug.print(DBG_ERROR, F("The board was not able to register to the network..."));
+    DEBUG_ERROR(F("The board was not able to register to the network..."));
     _reset = true;
     return NetworkConnectionState::DISCONNECTED;
   }
@@ -93,7 +86,7 @@ NetworkConnectionState CatM1ConnectionHandler::update_handleConnecting()
 {
   if (!GSM.isConnected())
   {
-    Debug.print(DBG_ERROR, F("GSM connection not alive... disconnecting"));
+    DEBUG_ERROR(F("GSM connection not alive... disconnecting"));
     return NetworkConnectionState::DISCONNECTED;
   }
 
@@ -101,18 +94,18 @@ NetworkConnectionState CatM1ConnectionHandler::update_handleConnecting()
     return NetworkConnectionState::CONNECTED;
   }
 
-  Debug.print(DBG_INFO, F("Sending PING to outer space..."));
+  DEBUG_INFO(F("Sending PING to outer space..."));
   int const ping_result = GSM.ping("time.arduino.cc");
-  Debug.print(DBG_INFO, F("GSM.ping(): %d"), ping_result);
+  DEBUG_INFO(F("GSM.ping(): %d"), ping_result);
   if (ping_result < 0)
   {
-    Debug.print(DBG_ERROR, F("Internet check failed"));
-    Debug.print(DBG_INFO, F("Retrying in  \"%d\" milliseconds"), _timeoutTable.timeout.connecting);
+    DEBUG_ERROR(F("Internet check failed"));
+    DEBUG_INFO(F("Retrying in  \"%d\" milliseconds"), _timeoutTable.timeout.connecting);
     return NetworkConnectionState::CONNECTING;
   }
   else
   {
-    Debug.print(DBG_INFO, F("Connected to Internet"));
+    DEBUG_INFO(F("Connected to Internet"));
     return NetworkConnectionState::CONNECTED;
   }
 }
@@ -122,7 +115,7 @@ NetworkConnectionState CatM1ConnectionHandler::update_handleConnected()
   int const is_gsm_access_alive = GSM.isConnected();
   if (is_gsm_access_alive != 1)
   {
-    Debug.print(DBG_ERROR, F("GSM connection not alive... disconnecting"));
+    DEBUG_ERROR(F("GSM connection not alive... disconnecting"));
     return NetworkConnectionState::DISCONNECTED;
   }
   return NetworkConnectionState::CONNECTED;

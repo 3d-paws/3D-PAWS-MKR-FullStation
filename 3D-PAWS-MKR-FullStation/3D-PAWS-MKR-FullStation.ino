@@ -1,5 +1,5 @@
 #define COPYRIGHT "Copyright [2025] [University Corporation for Atmospheric Research]"
-#define VERSION_INFO "MKRFS-250911"  // MKR Full Station - Release Date
+#define VERSION_INFO "MKRFS-250921"  // MKR Full Station - Release Date
 
 /*
  *======================================================================================================================
@@ -94,6 +94,7 @@
 //                  Fixed rain total eeprom initialization
 //   2025-09-11 RJB In OBS fixed casting bug on rain collection. Added (float)
 //                    (rain > (((float) rgds / 60) * QC_MAX_RG))
+//   2025-09-21 RJB Update all out of data libraries.
 //
 //  Note: The below 2 cases is where I have seen a reboot not resolving a modem problem.
 //        Resolution required removing of power (USB and Battery) to clean up the modem.

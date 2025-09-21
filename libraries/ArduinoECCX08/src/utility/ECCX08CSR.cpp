@@ -17,6 +17,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#include "ECCX08Config.h"
 #include "ArduinoECCX08.h"
 
 #include "ASN1Utils.h"
@@ -173,5 +174,6 @@ void ECCX08CSRClass::setCommonName(const char* commonName)
   _commonName = commonName;
 }
 
-
+#if !defined(ECCX08_DISABLE_CSR)
 ECCX08CSRClass ECCX08CSR;
+#endif

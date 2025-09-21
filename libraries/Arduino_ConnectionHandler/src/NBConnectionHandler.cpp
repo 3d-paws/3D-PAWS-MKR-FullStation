@@ -1,22 +1,15 @@
 /*
-   This file is part of ArduinoIoTCloud.
+  This file is part of the Arduino_ConnectionHandler library.
 
-   Copyright 2019 ARDUINO SA (http://www.arduino.cc/)
+  Copyright (c) 2019 Arduino SA
 
-   This software is released under the GNU General Public License version 3,
-   which covers the main part of arduino-cli.
-   The terms of this license can be found at:
-   https://www.gnu.org/licenses/gpl-3.0.en.html
-
-   You can be released from the requirements of the above licenses by purchasing
-   a commercial license. Buying such a license is mandatory if you want to modify or
-   otherwise use the software for commercial activities involving the Arduino
-   software without disclosing the source code of your own applications. To purchase
-   a commercial license, send an email to license@arduino.cc.
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 /******************************************************************************
-   INCLUDE
+  INCLUDE
  ******************************************************************************/
 
 #include "ConnectionHandlerDefinitions.h"
@@ -25,13 +18,13 @@
 #include "NBConnectionHandler.h"
 
 /******************************************************************************
-   CONSTANTS
+  CONSTANTS
  ******************************************************************************/
 
 static int const NB_TIMEOUT = 30000;
 
 /******************************************************************************
-   FUNCTION DEFINITION
+  FUNCTION DEFINITION
  ******************************************************************************/
 
 __attribute__((weak)) void mkr_nb_feed_watchdog()
@@ -43,7 +36,7 @@ __attribute__((weak)) void mkr_nb_feed_watchdog()
 }
 
 /******************************************************************************
-   CTOR/DTOR
+  CTOR/DTOR
  ******************************************************************************/
 
 NBConnectionHandler::NBConnectionHandler()
@@ -72,7 +65,7 @@ NBConnectionHandler::NBConnectionHandler(char const * pin, char const * apn, cha
 }
 
 /******************************************************************************
-   PUBLIC MEMBER FUNCTIONS
+  PUBLIC MEMBER FUNCTIONS
  ******************************************************************************/
 
 unsigned long NBConnectionHandler::getTime()
@@ -81,7 +74,7 @@ unsigned long NBConnectionHandler::getTime()
 }
 
 /******************************************************************************
-   PRIVATE MEMBER FUNCTIONS
+  PRIVATE MEMBER FUNCTIONS
  ******************************************************************************/
 
 NetworkConnectionState NBConnectionHandler::update_handleInit()
@@ -93,13 +86,13 @@ NetworkConnectionState NBConnectionHandler::update_handleInit()
                 _settings.nb.login,
                 _settings.nb.pass) == NB_READY)
   {
-    Debug.print(DBG_INFO, F("SIM card ok"));
+    DEBUG_INFO(F("SIM card ok"));
     _nb.setTimeout(NB_TIMEOUT);
     return NetworkConnectionState::CONNECTING;
   }
   else
   {
-    Debug.print(DBG_ERROR, F("SIM not present or wrong PIN"));
+    DEBUG_ERROR(F("SIM not present or wrong PIN"));
     return NetworkConnectionState::ERROR;
   }
 }
@@ -107,15 +100,15 @@ NetworkConnectionState NBConnectionHandler::update_handleInit()
 NetworkConnectionState NBConnectionHandler::update_handleConnecting()
 {
   NB_NetworkStatus_t const network_status = _nb_gprs.attachGPRS(true);
-  Debug.print(DBG_DEBUG, F("GPRS.attachGPRS(): %d"), network_status);
+  DEBUG_DEBUG(F("GPRS.attachGPRS(): %d"), network_status);
   if (network_status == NB_NetworkStatus_t::NB_ERROR)
   {
-    Debug.print(DBG_ERROR, F("GPRS.attachGPRS() failed"));
+    DEBUG_ERROR(F("GPRS.attachGPRS() failed"));
     return NetworkConnectionState::ERROR;
   }
   else
   {
-    Debug.print(DBG_INFO, F("Connected to GPRS Network"));
+    DEBUG_INFO(F("Connected to GPRS Network"));
     return NetworkConnectionState::CONNECTED;
   }
 }
@@ -123,22 +116,22 @@ NetworkConnectionState NBConnectionHandler::update_handleConnecting()
 NetworkConnectionState NBConnectionHandler::update_handleConnected()
 {
   int const nb_is_access_alive = _nb.isAccessAlive();
-  Debug.print(DBG_VERBOSE, F("GPRS.isAccessAlive(): %d"), nb_is_access_alive);
+  DEBUG_VERBOSE(F("GPRS.isAccessAlive(): %d"), nb_is_access_alive);
   if (nb_is_access_alive != 1)
   {
-    Debug.print(DBG_INFO, F("Disconnected from cellular network"));
+    DEBUG_INFO(F("Disconnected from cellular network"));
     return NetworkConnectionState::DISCONNECTED;
   }
   else
   {
-    Debug.print(DBG_VERBOSE, F("Connected to Cellular Network"));
+    DEBUG_VERBOSE(F("Connected to Cellular Network"));
     return NetworkConnectionState::CONNECTED;
   }
 }
 
 NetworkConnectionState NBConnectionHandler::update_handleDisconnecting()
 {
-  Debug.print(DBG_VERBOSE, F("Disconnecting from Cellular Network"));
+  DEBUG_VERBOSE(F("Disconnecting from Cellular Network"));
   _nb.shutdown();
   return NetworkConnectionState::DISCONNECTED;
 }
