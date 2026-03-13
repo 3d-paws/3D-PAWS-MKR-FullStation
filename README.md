@@ -76,3 +76,9 @@ Note: Specific pin numbers can vary and are typically defined in header or confi
 ### Setup Steps
 1. Clone the repository:
 
+## READMEs
+### [Arduino Compile Notes](docs/CompileNotes.md)
+### [Code Operation Notes](docs/CodeOperation.md)
+### [Daily Reboot](docs/DailyReboot.md)
+### [Modem Firmware Upgrading MKR NB 1500](docs/ModemFirmwareUpgrading.md)
+
