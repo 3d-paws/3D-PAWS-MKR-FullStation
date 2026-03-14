@@ -180,8 +180,6 @@ void ModemClass::end()
   }
 }
 
-/* ICDP Added */
-#ifdef NOWAY_ICDP
 void ModemClass::hardReset()
 {
   // Hardware pin reset, only use in EMERGENCY
@@ -190,29 +188,6 @@ void ModemClass::hardReset()
   digitalWrite(_resetPin, LOW);
   setVIntPin(SARA_VINT_OFF);
 }
-#else
-void ModemClass::hardReset()
-{
-  // EMERGENCY hardware reset ONLY - SARA-R410M RESET_N timing
-  pinMode(_resetPin, OUTPUT);
-  
-  // Disable V_INT monitoring first
-  setVIntPin(SARA_VINT_OFF);
-  
-  // CORRECT: Assert reset LOW immediately (>=10s per datasheet)
-  digitalWrite(_resetPin, LOW);
-  delay(11000);  // 11s > 10s minimum
-  
-  // Release reset (goes HIGH/inactive)
-  digitalWrite(_resetPin, HIGH);
-  
-  // Wait full boot + AT response capability (~30s total)
-  delay(20000);
-  
-  // Re-detect modem type/baud
-  autosense(30000);
-}
-#endif
 
 void ModemClass::debug()
 {

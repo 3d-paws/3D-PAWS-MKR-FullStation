@@ -6,27 +6,114 @@ The code is provided at [Github - https://github.com/3d-paws/3D-PAWS-MKR-FullSta
 Libraries are provided and need to be copied to your Arduino's library directory.
 
 
-## Modification to MKRNB
-
-### Adding support for Modem Reset.
+## Modification to Library MKRNB - Adding support for Modem Hard Reset to MKR NB 1500.
 
 The Arduino MKR NB 1500 modem reset pin is SARA_RESETN, a GPIO connected to the modem RESET_N pin.
 
 Edit libraries/MKRNB/src/NBModem.h and add the below.
 ```C
-  /* ICDP Added */
-  void hardReset();
+/* ICDP Added */
+void hardReset();
 ```
 Edit libraries/MKRNB/src/NBModem.cpp and add the below.
 ```C
-  // UCDP Added */
-  void NBModem::hardReset()
-  {
-    MODEM.hardReset();
-  }
+/* ICDP Added */
+void NBModem::hardReset()
+{
+  MODEM.hardReset();
+}
+
+Edit libraries/MKRNB/src/Modem.cpp and change hardReset to the below. This fixes the known bug of MKR NB 1500 RESET_N pin has INVERTED LOGIC due to N-channel MOSFET level shifters
+```C
+void ModemClass::hardReset()
+{
+  // EMERGENCY hardware reset ONLY - SARA-R410M RESET_N timing
+  pinMode(_resetPin, OUTPUT);
+  
+  // Disable V_INT monitoring first
+  setVIntPin(SARA_VINT_OFF);
+  
+  // CORRECT: Assert reset LOW immediately (>=10s per datasheet)
+  digitalWrite(_resetPin, LOW);
+  delay(11000);  // 11s > 10s minimum
+  
+  // Release reset (goes HIGH/inactive)
+  digitalWrite(_resetPin, HIGH);
+  
+  // Wait full boot + AT response capability (~30s total)
+  delay(20000);
+  
+  // Re-detect modem type/baud
+  autosense(30000);
+}
 ```
 
-### Notes on Adding SPI1 and Wire1 to MKR NB 1500 and will use the modified library called RF9X-RK-SPI1
+```
+
+## Modification to Library MKRGSM - Adding support for Modem Hard Reset to MKR GSM 1400.
+
+Edit libraries/MKGSM/src/GSMModem.h and add the below.
+```C
+/* ICDP Added */
+void hardReset();
+```
+Edit libraries/MKGSM/src/GSMModem.cpp and add the below.
+```C
+/* ICDP Added */
+void GSMModem::hardReset()
+{
+  MODEM.hardReset();
+}
+```
+
+Edit libraries/MKGSM/src/Modem.h and add the below.
+```C
+/* ICDP Added */
+void hardReset();
+```
+Edit libraries/MKGSM/src/Modem.cpp and add the below after the existing reset() function.
+```C
+/* ICDP Added */
+int ModemClass::hardReset()
+{
+  // Hardware pin reset, only use in emergency
+  pinMode(_resetPin, OUTPUT);
+
+  // Assert reset (active low on SARA modem)
+  digitalWrite(_resetPin, LOW);
+  delay(1000); // Hold low long enough for a full reset (datasheet-level value recommended)
+
+  // Deassert reset and let modem boot
+  digitalWrite(_resetPin, HIGH);
+
+  // Give the modem time to come back up and start responding to AT
+  delay(10000);
+
+  // Re-autosense / check if modem responds again
+  if (autosense(10000) == 1) {
+    return 1;
+  }
+
+  return 0;
+}
+```
+
+Note: The library "Arduino_ConnectionHandler" includes the "MKRNB" library. If compiling for "MKR NB 1500". If compiling for "MKR GSM 1400" it will include "MKRGSM" library.
+
+
+### Modifing Board Variants files to support SPI1 for LoRa 
+#### mkrnb1500 board
+
+Modified files are located in 3D-PAWS-MKR-FullStation/variants/mkrnb1500<br>
+Copy to the Arduino package install for the board Library/Arduino15/packages/arduino/hardware/samd/1.8.14/variants/mkrnb1500
+
+#### mkrgsm1400 board
+Modified files are located in 3D-PAWS-MKR-FullStation/variants/mkrgsm1400<br>
+Copy to the Arduino package install for the board Library/Arduino15/packages/arduino/hardware/samd/1.8.14/variants/mkrgsm1400
+
+
+### Details on adding SPI1 and Wire1 to MKR NB 1500 and will use the modified library called RF9X-RK-SPI1
+
 ```C
   https://learn.adafruit.com/using-atsamd21-sercom-to-add-more-spi-i2c-serial-ports?view=all
    
@@ -79,7 +166,7 @@ Edit libraries/MKRNB/src/NBModem.cpp and add the below.
                                 A3             D3            D2             SPI_PAD_2_SCK_3  SERCOM_RX_PAD_0                                                                                                                                          
  ```
 
-### Modifing the variant filese to add SPI1
+### Detail on modifing the variant filese to add SPI1
 Note If we reload or update the board package (via Board Manager), we loose these changes.
 
 We modifing the variant files because there is a SPIClassSAMD we must call if we are doing it from arduino sketch.
