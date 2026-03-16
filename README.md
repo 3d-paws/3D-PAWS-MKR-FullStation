@@ -3,11 +3,13 @@
 ## READMEs
 ### [Arduino Compile Notes](docs/CompileNotes.md)
 ### [Code Operation Notes](docs/CodeOperation.md)
+### [Configuration File Example](docs/Configuration.md)
 ### [Daily Reboot](docs/DailyReboot.md)
 ### [INFO - Station Information](docs/INFO.md)
 ### [LoRa Remote Relay](docs/LoRaRelay.md)
 ### [Modem Firmware Upgrading MKR NB 1500](docs/ModemFirmwareUpgrading.md)
 ### [OLED Display](docs/OLED_Display.md)
+### [Pin Mappings](docs/PinMappings.md)
 ### [SD Card Information](docs/SD.md)
 ### [Sensor Information](docs/Sensors.md)
 ### [Serial Monitor](docs/SerialMonitor.md)
