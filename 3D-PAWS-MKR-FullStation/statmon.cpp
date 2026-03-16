@@ -116,12 +116,12 @@ void StationMonitor() {
           break;
         
         case BME280_BMP390_CHIP_ID :
-          if (BMX_1_chip_id == BME280_BMP390_CHIP_ID) {
+          if (BMX_1_type == BMX_TYPE_BME280) {
             bmx_pressure = bme1.readPressure()/100.0F;           // bmxp1
             bmx_temp = bme1.readTemperature();                   // bmxt1
             bmx_humid = bme1.readHumidity();                     // bmxh1 
           }
-          else { // BMP390
+          else { // BMX_TYPE_BMP390
             bmx_pressure = bm31.readPressure()/100.0F;
             bmx_temp = bm31.readTemperature();
           }
@@ -154,24 +154,24 @@ void StationMonitor() {
       switch (BMX_2_chip_id) {
         case BMP280_CHIP_ID :
           bmx_pressure = bmp2.readPressure()/100.0F;           // bmxp1
-          bmx_temp = bmp1.readTemperature();                   // bmxt1
+          bmx_temp = bmp2.readTemperature();                   // bmxt1
           break;
         
         case BME280_BMP390_CHIP_ID :
-          if (BMX_2_chip_id == BME280_BMP390_CHIP_ID) {
+          if (BMX_2_type == BMX_TYPE_BME280) {
             bmx_pressure = bme2.readPressure()/100.0F;           // bmxp1
-            bmx_temp = bme1.readTemperature();                   // bmxt1
-            bmx_humid = bme1.readHumidity();                     // bmxh1 
+            bmx_temp = bme2.readTemperature();                   // bmxt1
+            bmx_humid = bme2.readHumidity();                     // bmxh1 
           }
-          else { // BMP390
+          else { // BMX_TYPE_BMP390
             bmx_pressure = bm32.readPressure()/100.0F;
-            bmx_temp = bm31.readTemperature();
+            bmx_temp = bm32.readTemperature();
           }
           break;
           
         case BMP388_CHIP_ID :
           bmx_pressure = bm32.readPressure()/100.0F;
-          bmx_temp = bm31.readTemperature();
+          bmx_temp = bm32.readTemperature();
           break;
         
         default: // WTF
@@ -307,4 +307,3 @@ void StationMonitor() {
   
   OLED_update();
 }
-

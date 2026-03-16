@@ -109,6 +109,7 @@
  *   2026-03-10 RJB Added DSMUX 1-Wire support for 8 temperature sensors dst0-7
  *   2026-03-12 RJB Added pinmode INPUT to wind rain OP1, and OP2
  *                  Added support to set rain total rollover
+ *   2026-03-16 RJB Bug fix in statmon.cpp B2
  * ======================================================================================================================
  */
 
