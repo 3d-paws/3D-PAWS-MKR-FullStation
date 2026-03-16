@@ -1,0 +1,48 @@
+/*
+ * ======================================================================================================================
+ *  obs.h - Observation Definations
+ * ====================================================================================================================== 
+ */
+#include <time.h>  // defines time_t
+
+#define OBSERVATION_INTERVAL      60   // Seconds
+#define MAX_SENSORS         48
+#define MAX_OBS_SIZE  1024
+#define PUB_FAILS_BEFORE_ACTION 8
+
+typedef enum {
+  F_OBS, 
+  I_OBS, 
+  U_OBS
+} OBS_TYPE;
+
+typedef struct {
+  char          id[12];
+  int           type;
+  float         f_obs;
+  int           i_obs;
+  unsigned long u_obs;
+  bool          inuse;
+} SENSOR;
+
+typedef struct {
+  bool            inuse;                // Set to true when an observation is stored here         
+  time_t          ts;                   // TimeStamp
+  int             css;                  // Cell Signal Strength
+  unsigned long   hth;                  // System Status Bits
+  SENSOR          sensor[MAX_SENSORS];
+} OBSERVATION_STR;
+
+// Extern variables
+extern OBSERVATION_STR obs;
+extern char obsbuf[MAX_OBS_SIZE];
+extern int OBS_PubFailCnt;
+
+// Function prototypes
+bool OBS_Send(char *obs);
+void OBS_Clear();
+void OBS_N2S_Add();
+bool OBS_Build_JSON();
+void OBS_N2S_Save();
+void OBS_Take();
+void OBS_Do();

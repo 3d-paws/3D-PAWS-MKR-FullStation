@@ -1,10 +1,11 @@
-# Configuration File Example
-[←Top](../README.md)<BR>
+/*
+ * ======================================================================================================================
+ *  cf.h - Configuration File Definations
+ * ======================================================================================================================
+ */
 
-On the SD card, create a file named CONFIG.TXT.
-
-Example CONFIG.TXT file.
-```
+/* 
+ * ======================================================================================================================
 #
 # CONFIG.TXT
 #
@@ -100,7 +101,64 @@ daily_reboot=22
 
 # Reset after N attempts calling Send_http() and failing on GetCellEpochTime() or client.connect() functions.
 no_network_reset_count=60
-```
+ * ======================================================================================================================
+ */
 
-### At initialization:
-- I2C sensors are auto detected. For example, if the AS5600 wind direction sensor is not detected, wind-related measurements and dependent observations will not be performed or reported.
+/*
+ * ======================================================================================================================
+ *  Define Global Configuration File Variables
+ * ======================================================================================================================
+ */
+#define CF_NAME           "CONFIG.TXT"
+#define KEY_MAX_LENGTH    30                // Config File Key Length
+#define VALUE_MAX_LENGTH  30                // Config File Value Length
+#define LINE_MAX_LENGTH   VALUE_MAX_LENGTH+KEY_MAX_LENGTH+3   // =, CR, LF
+
+// Extern variables
+
+// Web Server
+extern char *cf_webserver;
+extern int  cf_webserver_port;
+extern char *cf_urlpath;
+
+extern char *cf_apikey;
+extern int cf_instrument_id;
+
+// Info Server
+extern char *cf_info_server;
+extern int  cf_info_server_port;
+extern char *cf_info_urlpath;
+extern char *cf_info_apikey; 
+
+// SIM
+extern char *cf_sim_pin;
+extern char *cf_sim_apn;
+extern char *cf_sim_username;
+extern char *cf_sim_password;
+
+// LoRa AES
+extern char *cf_aes_pkey;
+extern long cf_aes_myiv;
+
+// LoRa
+extern int cf_lora_unitid;
+extern int cf_lora_txpwr;
+extern int cf_lora_freq;
+
+// Instruments
+extern int cf_nowind;
+extern int cf_rg1_enable;
+extern int cf_op1;
+extern int cf_op2;
+extern int cf_ds_baseline;
+extern int cf_daily_reboot;
+extern int cf_elevation;
+
+// System Timing
+extern int cf_obs_period;
+extern int cf_daily_reboot;
+extern int cf_no_network_reset_count;
+extern int cf_rtro;
+
+// Function prototypes
+void SD_ReadConfigFile();
