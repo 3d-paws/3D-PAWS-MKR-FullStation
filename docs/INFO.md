@@ -1,4 +1,4 @@
-# Station Information - (Particle Message type "INFO")
+# INFO Message
 [←Top](../README.md)<BR>
 Station Information is generated, stored on the SD card and transmitted with every boot and then every 6 hours from boot.
 
@@ -15,7 +15,59 @@ info_urlpath=/info/log.php
 info_apikey=1234
 ```
 
-### INFO Event Eessage
+Here is example PHP code that runs on the website receiving INFO messages and appending them in a log file.
+```php
+<?php
+//
+// log.php - log validated infomessages to info log file
+//
+
+// Log file path
+$logFile = '/usr/local/www/some.domain.com/info/info.log';
+
+// Expected API key
+$expectedApiKey = 'YOUR_API_KEY_1234';
+
+// Check for the HTTP_X_API_KEY header
+if (!isset($_SERVER['HTTP_X_API_KEY']) || $_SERVER['HTTP_X_API_KEY'] !== $expectedApiKey) {
+    // If the API key is missing or incorrect, return a 403 Forbidden error
+    http_response_code(403);
+    echo "Error: Forbidden. Invalid API key.";
+    exit;
+}
+
+// Check if there is POST data
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Get the POST data
+    $postData = file_get_contents("php://input");
+
+    // Check if data is successfully retrieved
+    if ($postData) {
+        $logEntry = "[" . date("Y-m-d H:i:s") . "] " . $postData . "\n";
+
+        // Try to write the log entry to the file
+        if (file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX) === false) {
+            // If there was an error writing to the file, return a 500 error
+            http_response_code(500);
+            echo "Error: Unable to write to log file.";
+        } else {
+            // Success
+            echo "Log entry saved.";
+        }
+    } else {
+        // If there was no data in the POST request, return a 400 error
+        http_response_code(400);
+        echo "Error: No data received.";
+    }
+} else {
+    // If not a POST request, return a 405 Method Not Allowed error
+    http_response_code(405);
+    echo "Error: Only POST requests are allowed.";
+}
+?>
+```
+
+### Example INFO Message
 <div style="overflow:auto; white-space:pre; font-family: monospace; font-size: 8px; line-height: 1.5; height: 625px; border: 1px solid black; padding: 10px;">
 <pre>
 {
