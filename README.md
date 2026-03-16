@@ -1,23 +1,5 @@
 # 3D-PAWS-MKR-FullStation
 
-## READMEs
-### [Arduino Compile Notes](docs/CompileNotes.md)
-### [Code Operation Notes](docs/CodeOperation.md)
-### [Configuration File Example](docs/Configuration.md)
-### [Daily Reboot](docs/DailyReboot.md)
-### [INFO - Station Information](docs/INFO.md)
-### [LoRa Remote Relay](docs/LoRaRelay.md)
-### [Modem Firmware Upgrading MKR NB 1500](docs/ModemFirmwareUpgrading.md)
-### [OLED Display](docs/OLED_Display.md)
-### [Pin Mappings](docs/PinMappings.md)
-### [SD Card Information](docs/SD.md)
-### [Sensor Information](docs/Sensors.md)
-### [Serial Monitor](docs/SerialMonitor.md)
-### [Station Monitor](docs/StationMonitor.md)
-### [System Health Bits (hth)](docs/SystemHealthBits.md)
-### [Voltaic Battery Voltage](docs/VoltaicBatteryVoltage.md)
-### [WatchDog Board](docs/WatchDog.md)
-
 ## Overview
 3D-PAWS-MKR-FullStation is a low-cost, open-source weather station firmware designed to run on Arduino MKR NB 1500 and MKR GSM 1400 boards. It is part of the 3D-PAWS (3D-Printed Automatic Weather Station) initiative developed by UCAR and the U.S. National Weather Service International Activities Office to provide accessible, reliable weather monitoring solutions for underserved regions using local materials and 3D printing.
 
@@ -37,6 +19,24 @@ This project enables environmental data collection—including temperature, humi
 - Modular firmware architecture for easy customization and expansion
 - Open-source and designed for local assembly with 3D-printed parts and common materials (PVC piping for frame)
 - Targeted for deployment in remote, low-resource regions for environmental monitoring and early warning systems
+
+## READMEs
+### [Arduino Compile Notes](docs/CompileNotes.md)
+### [Code Operation Notes](docs/CodeOperation.md)
+### [Configuration File Example](docs/Configuration.md)
+### [Daily Reboot](docs/DailyReboot.md)
+### [INFO - Station Information](docs/INFO.md)
+### [LoRa Remote Relay](docs/LoRaRelay.md)
+### [Modem Firmware Upgrading MKR NB 1500](docs/ModemFirmwareUpgrading.md)
+### [OLED Display](docs/OLED_Display.md)
+### [Pin Mappings](docs/PinMappings.md)
+### [SD Card Information](docs/SD.md)
+### [Sensor Information](docs/Sensors.md)
+### [Serial Monitor](docs/SerialMonitor.md)
+### [Station Monitor](docs/StationMonitor.md)
+### [System Health Bits (hth)](docs/SystemHealthBits.md)
+### [Voltaic Battery Voltage](docs/VoltaicBatteryVoltage.md)
+### [WatchDog Board](docs/WatchDog.md)
 
 
 
