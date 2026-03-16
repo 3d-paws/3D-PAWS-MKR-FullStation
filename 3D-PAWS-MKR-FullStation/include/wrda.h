@@ -52,8 +52,8 @@ typedef struct {
  *  Option Pin Defination Setup
  * ======================================================================================================================
  */
-#define OP1_PIN  1    // D0
-#define OP2_PIN  A1
+#define OP1_PIN  A1
+#define OP2_PIN  A2
 
 /*
  * ======================================================================================================================
@@ -76,7 +76,7 @@ typedef struct {
 #define OP2_STATE_VOLTAIC    2
 
 
-#define RAINGAUGE1_IRQ_PIN  A3
+#define RAINGAUGE1_IRQ_PIN  1 // D1
 #define RAINGAUGE2_IRQ_PIN  OP1_PIN
 #define DISTANCE_GAUGE_PIN  OP1_PIN
 #define VOLTAIC_VOLTAGE_PIN OP2_PIN

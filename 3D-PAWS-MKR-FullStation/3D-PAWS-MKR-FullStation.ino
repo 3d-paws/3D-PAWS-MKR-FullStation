@@ -1,5 +1,5 @@
 #define COPYRIGHT "Copyright [2026] [University Corporation for Atmospheric Research]"
-#define VERSION_INFO "MKRFS-260312"  // MKR Full Station - Release Date
+#define VERSION_INFO "MKRFS-260316"  // MKR Full Station - Release Date
 
 /*
  *======================================================================================================================
@@ -449,7 +449,7 @@ void setup()
 
   // Optipolar Hall Effect Sensor SS451A - Rain2 Gauge
   if (cf_op1 == OP1_STATE_RAIN) {
-    pinMode(RAINGAUGE2_IRQ_PIN, INPUT);
+    /// pinMode(RAINGAUGE2_IRQ_PIN, INPUT);
     raingauge2_interrupt_count = 0;
     raingauge2_interrupt_stime = millis();
     raingauge2_interrupt_ltime = 0;  // used to debounce the tip
