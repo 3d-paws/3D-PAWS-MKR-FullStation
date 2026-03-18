@@ -109,7 +109,8 @@
  *   2026-03-10 RJB Added DSMUX 1-Wire support for 8 temperature sensors dst0-7
  *   2026-03-12 RJB Added pinmode INPUT to wind rain OP1, and OP2
  *                  Added support to set rain total rollover
- *   2026-03-16 RJB Bug fix in statmon.cpp B2
+ *   2026-03-16 RJB Bug fix in statmon.cpp BMX identification
+ *                  Allowed rtro range changed to -12 to 12
  * ======================================================================================================================
  */
 
@@ -450,7 +451,7 @@ void setup()
 
   // Optipolar Hall Effect Sensor SS451A - Rain2 Gauge
   if (cf_op1 == OP1_STATE_RAIN) {
-    /// pinMode(RAINGAUGE2_IRQ_PIN, INPUT);
+    pinMode(RAINGAUGE2_IRQ_PIN, INPUT);
     raingauge2_interrupt_count = 0;
     raingauge2_interrupt_stime = millis();
     raingauge2_interrupt_ltime = 0;  // used to debounce the tip

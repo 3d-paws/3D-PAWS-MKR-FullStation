@@ -381,12 +381,10 @@ void SD_ReadConfigFile() {
   sprintf(msgbuf, "CF:%s=[%d]", F("obs_period"), cf_obs_period); Output (msgbuf);
 
   int cf_rtro = SD_findInt(F("rtro"));
-  if ((cf_rtro < 0) || (cf_rtro > 23)){
+  if ((cf_rtro < -12) || (cf_rtro > 12)){
     cf_rtro = 0;
   }
   sprintf(msgbuf, "CF:%s=[%d]", F("cf_rtro"), cf_rtro); Output (msgbuf);
-
-  int cf_rain_total_rollover;
 
   // Misc
   cf_daily_reboot = SD_findInt(F("daily_reboot"));

@@ -120,7 +120,7 @@ void INFO_Perform() {
   if (LORA_exists) {
     sprintf (msg+strlen(msg), ",lora(%d,%d,%dMHz)", cf_lora_unitid, cf_lora_txpwr, cf_lora_freq);  
   }
-   if (oled_type) {
+  if (oled_type) {
     sprintf (msg+strlen(msg), ",oled(%s)", OLED32 ? "32" : "64");  
   }
   sprintf (msg+strlen(msg), "\""); 
