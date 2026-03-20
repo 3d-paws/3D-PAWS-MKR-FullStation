@@ -111,6 +111,7 @@
  *                  Added support to set rain total rollover
  *   2026-03-16 RJB Bug fix in statmon.cpp BMX identification
  *                  Allowed rtro range changed to -12 to 12
+ *   2026-03-20 RJB Modified EEPROM_UpdateRainTotals() to only update eeprom on change.
  * ======================================================================================================================
  */
 
