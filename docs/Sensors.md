@@ -27,8 +27,10 @@ Sensors
 | MB7363, MB7366, MB7383, MB7386| 10m Distance            | Maxbotix Ultrasonic Distance Sensor                                                                      | [Maxbotix](https://maxbotix.com/products)        |
 | Dallas DS18B20                | Temperature             | Connectes to DS2482S-800 8 Channel I2C to 1-Wire Bus Adapter                                             | [Dallas DS18B20](https://www.adafruit.com/product/381)|
 
+### I2C Cable
+- [Adafruit 5-pin JST ESLOV to 4-pin JST SH STEMMA QT / Qwiic Cable - 100mm long](https://www.adafruit.com/product/4483)
 ---
-### Tags Names sent to Particle
+### Tags Names sent to Chords
 | Tag Name | Description |
 |----------|-------------|
 | bcs      | Battery Charger Status            |
@@ -144,6 +146,7 @@ Sensors
 (MB7360, MB7369, MB7380, MB7389)  
 Scale factor: (Vcc / 5120) per 1 mm  
 
+- MKR (12-bit, 0–4095): Range 0–5119 mm, resolution 1.25 mm per unit 
 - Particle (12-bit, 0–4095): Range 0–5119 mm, resolution 1.25 mm per unit  
 - Feather (10-bit, 0–1023): Range 0–5119 mm, resolution 5 mm per unit  
 
@@ -151,6 +154,7 @@ Scale factor: (Vcc / 5120) per 1 mm
 (MB7363, MB7366, MB7383, MB7386)  
 Scale factor: (Vcc / 10240) per 1 mm  
 
+- MKR (12-bit, 0–4095): Range 0–10239 mm, resolution 2.5 mm per unit 
 - Particle (12-bit, 0–4095): Range 0–10239 mm, resolution 2.5 mm per unit  
 - Feather (10-bit, 0–1023): Range 0–10239 mm, resolution 10 mm per unit  
 

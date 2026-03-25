@@ -75,11 +75,20 @@ void INFO_Perform() {
   sprintf (msg, "{\"MT\":\"INFO\""); // Message Type -> INFO
 
   // AFM0WiFi = Adafruit Feather M0 WiFi
-  sprintf (msg+strlen(msg), ",\"at\":\"%s\",\"devid\":\"%s\",\"board\":\"AFM0WiFi\"", // Adafruit Feather M0 WiFi
-    timestamp, DeviceID);
+  sprintf (msg+strlen(msg), ",\"at\":\"%s\",\"devid\":\"%s\"", timestamp, DeviceID);
+
+#if defined(ARDUINO_SAMD_MKRNB1500)
+  sprintf (msg+strlen(msg), ",\"board\":\"MKRNB1500\"");
+#elif defined(ARDUINO_SAMD_MRKGSM1400)
+  sprintf (msg+strlen(msg), ",\"board\":\"MKRGSM1400\"");
+#else
+  sprintf (msg+strlen(msg), ",\"board\":\"UNKNOWN\"");
+#endif
+
+  sprintf (msg+strlen(msg), ",\"imei\":\"%s\"", ModemIMEI);  // Note: On network error this printed +CEREG: 0,0
 
   int bcs = get_batterystate();
-  sprintf (msg+strlen(msg), ",\"ver\":\"%s\",\"bcs\":%s,\"hth\":%d,\"elev\":%d,\"rtro\":%d",
+  sprintf (msg+strlen(msg), ",\"ver\":\"%s\",\"bcs\":%s,\"hth\":%d,\"elev\":%d,\"rtro\":\"%s\"",
     versioninfo, batterystate[bcs], SystemStatusBits, cf_elevation, cf_rtro);
 
   // Log Server Information and Chords Apikey and Id

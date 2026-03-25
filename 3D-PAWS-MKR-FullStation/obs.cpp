@@ -237,7 +237,7 @@ void OBS_Take() {
     rg2 = (isnan(rg2) || (rg2 < QC_MIN_RG) || (rg2 > (((float)rg2ds / 60) * QC_MAX_RG)) ) ? QC_ERR_RG : rg2;
   }
 
-  if (cf_rg1_enable || (cf_op1 == OP1_STATE_RAIN)) {
+  if (RainEnabled()) {
     EEPROM_UpdateRainTotals(rg1, rg2);
   }
   
@@ -846,10 +846,19 @@ void OBS_Do() {
       
     // We want to transmit all the LoRa msgs or save them to N2S file if we can not transmit them.
     while (lora_relay_need2log()) {      
-      lora_relay_build_JSON(); // Copy JSON observation to obsbuf, remove from relay structure
+      int relay_type = lora_relay_build_JSON(); // Copy JSON observation to obsbuf, remove from relay structure
       if (OK2Send) {
-         OK2Send = Send_http(obsbuf, cf_webserver, cf_webserver_port, cf_urlpath, METHOD_GET, cf_apikey);
-         // Note a new LoRa RS msgs could be received as we are sending    
+
+        // Note a new LoRa RS msgs could be received as we are sending
+        if (relay_type == 1) { 
+          // INFO Message
+          OK2Send = Send_http(obsbuf, cf_info_server, cf_info_server_port, cf_info_urlpath, METHOD_POST, cf_info_apikey);
+        }
+        else {
+          // Lora Relay
+          OK2Send = Send_http(obsbuf, cf_webserver, cf_webserver_port, cf_urlpath, METHOD_GET, cf_apikey);
+        }
+            
       }
       if (!OK2Send) {
         SD_NeedToSend_Add(obsbuf); // Save to N2F File

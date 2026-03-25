@@ -18,6 +18,7 @@
  * =======================================================================================================================
  */
 char ModemFirmwareVersion[32];
+char ModemIMEI[16];
 
 NetworkConnectionState ConnectionState = NetworkConnectionState::DISCONNECTED;
 unsigned int NoNetworkLoopCycleCount   = 0;
@@ -245,12 +246,11 @@ void PrintCellSignalStrength() {
  */
 void PrintModemIMEI() {
   String IMEI = "";
-  char s[32];
 
   IMEI = modem.getIMEI();
   IMEI.replace("\n", "");
-  IMEI.toCharArray(s, 32);
-  sprintf (Buffer32Bytes, "IMEI:%s", s);  // Note: On network error this printed +CEREG: 0,0
+  IMEI.toCharArray(ModemIMEI, 16);
+  sprintf (Buffer32Bytes, "IMEI:%s", ModemIMEI);  // Note: On network error this printed +CEREG: 0,0
   Output (Buffer32Bytes);
 }
 

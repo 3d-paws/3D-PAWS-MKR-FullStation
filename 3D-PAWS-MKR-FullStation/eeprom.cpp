@@ -111,6 +111,30 @@ void EEPROM_ClearRainTotals(uint32_t current_time) {
 
 /* 
  *=======================================================================================================================
+ * EEPROM_TimeToRollOver() - 
+ *=======================================================================================================================
+ */
+bool EEPROM_TimeToRollOver() {
+  if (RainEnabled() && eeprom_valid) {
+    uint32_t current_time        = stc.getEpoch();
+    uint32_t seconds_today       = current_time % 86400;
+    uint32_t seconds_at_0000     = current_time - seconds_today;
+    uint32_t seconds_at_rollover = seconds_at_0000 + (cf_rtro_hour * 3600) + (cf_rtro_minute * 60);
+
+    // If no rain in 24 hours. Then rgts will be time of last rollover. 
+    // Or rgts will be the eeprom initialized time.
+    // if rgts is before rollover then we need to move today's totals to prior day
+    // Work with in memory copy of eeprom rain gauge time stamp
+    if ((current_time > seconds_at_rollover) && (eeprom.rgts <= seconds_at_rollover)) {
+      Output ("RollOverTime");
+      return (true);
+    }
+  }
+  return (false);
+}
+
+/* 
+ *=======================================================================================================================
  * EEPROM_Validate() - Check status of EEPROM information and determine status
  *                       Requires system clock to be valid
  *=======================================================================================================================
@@ -137,7 +161,7 @@ void EEPROM_Validate() {
   else {
     uint32_t seconds_today                 = current_time % 86400;
     uint32_t seconds_at_0000               = current_time - seconds_today;
-    uint32_t seconds_at_rollover           = seconds_at_0000 + (cf_rtro * 3600);
+    uint32_t seconds_at_rollover           = seconds_at_0000 + (cf_rtro_hour * 3600) + (cf_rtro_minute * 60);
     uint32_t seconds_yesterday_at_rollover = seconds_at_rollover - 86400;
 
     // RT = Rain Total
@@ -208,7 +232,7 @@ void EEPROM_UpdateRainTotals(float rgt1, float rgt2) {
     uint32_t current_time        = stc.getEpoch();
     uint32_t seconds_today       = current_time % 86400;
     uint32_t seconds_at_0000     = current_time - seconds_today;
-    uint32_t seconds_at_rollover = seconds_at_0000 + (cf_rtro * 3600);
+    uint32_t seconds_at_rollover = seconds_at_0000 + (cf_rtro_hour * 3600) + (cf_rtro_minute * 60);
 
     // If no rain in 24 hours. Then rgts will be time of last rollover. 
     // Or rgts will be the eeprom initialized time.
@@ -222,7 +246,16 @@ void EEPROM_UpdateRainTotals(float rgt1, float rgt2) {
       update=true;
     }
 
-    // Only add valid rain to the total
+    // We might of rolled rain total over in the above code.
+    // If there is rain in the below code. Technically the rain could have occured in the prior day.
+    // The rain has not been reported/transmitted yet. And when we do transmit it, the time will be after the 
+    // rain total rollover time. So it has to go into the NEW daily total
+
+    // {"at":"2026-03-24T23:14:16","rg":0.0,"rgt":7.6,"rgp":1.6
+    // RollOverTime
+    // {"at":"2026-03-24T23:15:02","rg":0.2,"rgt":0.2,"rgp":7.6
+
+    // Add rain to the total if there is some.
     if (rgt1>0.0) {
       eeprom.rgt1 += rgt1;
       update=true;

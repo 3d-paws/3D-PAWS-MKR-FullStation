@@ -77,6 +77,7 @@ extern GSM nb_gsm;
 #endif
 
 extern char ModemFirmwareVersion[32];
+extern char ModemIMEI[16];
 extern NetworkConnectionState ConnectionState;
 extern unsigned int NoNetworkLoopCycleCount;
 extern bool NetworkHasBeenOperational;

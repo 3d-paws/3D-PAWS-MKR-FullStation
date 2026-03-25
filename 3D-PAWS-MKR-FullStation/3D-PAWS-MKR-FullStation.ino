@@ -1,5 +1,5 @@
 #define COPYRIGHT "Copyright [2026] [University Corporation for Atmospheric Research]"
-#define VERSION_INFO "MKRFS-260316"  // MKR Full Station - Release Date
+#define VERSION_INFO "MKRFS-260324"  // MKR Full Station - Release Date
 
 /*
  *======================================================================================================================
@@ -112,6 +112,10 @@
  *   2026-03-16 RJB Bug fix in statmon.cpp BMX identification
  *                  Allowed rtro range changed to -12 to 12
  *   2026-03-20 RJB Modified EEPROM_UpdateRainTotals() to only update eeprom on change.
+ *   2026-03-24 RJB More work on rtro 0-23 and 00,15,30,45 support
+ *                  Added a main loop rollover check that will trigger an observation and rollover
+ *   2026-03-25 RJB Added IMEI to INFO and fixed board type reporting
+ *                  Added code to route LoRa INFO and LoRa Relay message to the proper logging site.
  * ======================================================================================================================
  */
 
@@ -176,6 +180,9 @@
  *   SEE https://github.com/adafruit/Adafruit_DS248x
  *       https://learn.adafruit.com/adafruit-ds2482s-800-8-channel-i2c-to-1-wire-bus-adapter
  * 
+ * I2C Cable  5-pin JST ESLOV to 4-pin JST SH STEMMA QT / Qwiic Cable - 100mm long
+ *   SEE https://www.adafruit.com/product/4483
+ * 
  * Twilio Super SIM
  * https://www.twilio.com/docs/iot/supersim/cellular-modem-knowledge-base/ublox-supersim#sara-r4-cat-m1-nb-iot
  *
@@ -194,7 +201,7 @@
  * A1*  = Option Pin 1  
  * A2*  = Option Pin 2
  * A3   = LoRa SPI1 SPI1 MISO
- * A4   = LoRa Reset 
+ * A4   = LoRa Reset
  * A5   = WatchDog Monitor/Relay Reset Trigger 
  * A6   = WatchDog Monitor Heartbeat
  * 
@@ -571,7 +578,7 @@ void loop()
         INFO_Do();   // function will set nextinfo time for next call
       }
       
-      if (millis() >= Time_of_next_obs) {
+      if ((millis() >= Time_of_next_obs) || EEPROM_TimeToRollOver()) {
         Time_of_obs = stc.getEpoch(); // Update time we last sent (or attempted to send) observations.      
         OBS_Do();  // Here is why we are here 
         

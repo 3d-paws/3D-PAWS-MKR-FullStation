@@ -54,7 +54,9 @@ int cf_elevation=0;
 int cf_obs_period=0;
 int cf_daily_reboot=22;
 int cf_no_network_reset_count=60;
-int cf_rtro=0;
+char *cf_rtro=NULL;
+int cf_rtro_hour=0;
+int cf_rtro_minute=0;
 
 /*
  * ======================================================================================================================
@@ -247,6 +249,42 @@ long SD_findLong(const __FlashStringHelper * key) {
 }
 
 /* 
+ * =======================================================================================================================
+ * cf_rtro_validate()
+ * =======================================================================================================================
+ */
+void cf_rtro_validate() {
+  int hour = 0;
+  int minute = 0;
+  bool valid=false;
+
+  int parsed = sscanf(cf_rtro, "%d:%d", &hour, &minute);
+
+  if (parsed == 2) {
+    // H:MM format - validate quarter-hour
+    if ((hour >= 0 && hour <= 23) && (minute == 0 || minute == 15 || minute == 30 || minute == 45)) {
+      valid=true;
+    }
+  } 
+  else if (parsed == 1) {
+    // Just H format (minute = 0)
+    if (hour >= 0 && hour <= 23) {
+      valid=true;
+    }
+  } 
+
+  if (valid) {
+    cf_rtro_hour = hour;
+    cf_rtro_minute = minute;
+    sprintf(msgbuf, " RTRO:%d:%02d", cf_rtro_hour, cf_rtro_minute);
+  }
+  else {
+    sprintf(msgbuf, " RTRO:0 INVALID");
+  }
+  Output(msgbuf);
+}
+
+/* 
  *=======================================================================================================================
  * SD_ReadConfigFile()
  *=======================================================================================================================
@@ -380,11 +418,9 @@ void SD_ReadConfigFile() {
   }
   sprintf(msgbuf, "CF:%s=[%d]", F("obs_period"), cf_obs_period); Output (msgbuf);
 
-  int cf_rtro = SD_findInt(F("rtro"));
-  if ((cf_rtro < -12) || (cf_rtro > 12)){
-    cf_rtro = 0;
-  }
-  sprintf(msgbuf, "CF:%s=[%d]", F("cf_rtro"), cf_rtro); Output (msgbuf);
+  cf_rtro = SD_findCharStr(F("rtro"));
+  sprintf(msgbuf, "CF:%s=[%s]", F("rtro"), cf_rtro); Output (msgbuf);
+  cf_rtro_validate();
 
   // Misc
   cf_daily_reboot = SD_findInt(F("daily_reboot"));

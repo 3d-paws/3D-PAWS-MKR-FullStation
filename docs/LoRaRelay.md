@@ -1,6 +1,6 @@
 # LoRa Remote Relay
 [←Top](../README.md)<BR>
-When LoRa is enabled on the station by adding the LoRa Module and configuring CONFIG.TXT on the SD card. LoRa messages from remote LoRa stations are received and stored in memory. Up to 64 messages. At the next transmit windows these observations are sent to Particle. They will be added to the N2S file when necessary.
+When LoRa is enabled on the station by adding the LoRa Module and configuring CONFIG.TXT on the SD card. LoRa messages from remote LoRa stations are received and stored in memory. Up to 64 messages. At the next transmit windows these observations are sent to data logging site. They will be added to the N2S file when necessary.
 
 For information on LoRa Remote stations see [3D-PAWS-Feather-LoRaRemoteM0](https://github.com/3d-paws/3D-PAWS-Feather-LoRa-Remote) code base.
 
@@ -9,7 +9,7 @@ For information on LoRa Remote stations see [3D-PAWS-Feather-LoRaRemoteM0](https
 - "INFO" : Sent at boot providing station configuration information
 - "LR" : LoRa Relay message containing observation information.
 
-These type are sent to Particle as event types "INFO" and "LR". Where Particle Integrations (Webhooks) take over the processsing.
+LoRa INFO and LoRa LR messages are routed to proper info/logging site.
 
 ### Tibits of Information:
 - LoRa messages are AES 128 bit encrypted.
