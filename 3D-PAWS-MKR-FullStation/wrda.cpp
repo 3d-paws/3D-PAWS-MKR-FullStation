@@ -23,6 +23,8 @@
  * Variables and Data Structures
  * =======================================================================================================================
  */
+volatile bool TurnLedOff = false;      // Set true in rain gauge interrupt
+
 
 /*
  * ======================================================================================================================
@@ -66,7 +68,7 @@ unsigned long anemometer_interrupt_stime;
  */
 volatile unsigned int raingauge1_interrupt_count=0;
 uint64_t raingauge1_interrupt_stime; // Send Time
-uint64_t raingauge1_interrupt_ltime; // Last Time
+volatile uint64_t raingauge1_interrupt_ltime; // Last Time
 uint64_t raingauge1_interrupt_toi;   // Time of Interrupt
 
 /*
@@ -76,7 +78,7 @@ uint64_t raingauge1_interrupt_toi;   // Time of Interrupt
  */
 volatile unsigned int raingauge2_interrupt_count=0;
 uint64_t raingauge2_interrupt_stime; // Send Time
-uint64_t raingauge2_interrupt_ltime; // Last Time
+volatile uint64_t raingauge2_interrupt_ltime; // Last Time
 uint64_t raingauge2_interrupt_toi;   // Time of Interrupt
 
 /*
@@ -147,6 +149,7 @@ bool RainEnabled() {
     return (false);
   }
 }
+
 /* 
  *=======================================================================================================================
  * Wind_SampleSpeed() - Return a wind speed based on interrupts and duration wind

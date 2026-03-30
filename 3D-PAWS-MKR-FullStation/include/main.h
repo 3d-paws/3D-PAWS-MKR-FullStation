@@ -24,7 +24,6 @@
 // Extern variables
 extern char versioninfo[];
 extern bool JustPoweredOn;              // Used to clear SystemStatusBits set during power on device discovery
-extern bool TurnLedOff;                 // Set true in rain gauge interrupt
 
 extern char msgbuf[MAX_MSGBUF_SIZE];   // Used to hold messages
 extern char *msgp;                     // Pointer to message text
