@@ -1,5 +1,5 @@
 #define COPYRIGHT "Copyright [2026] [University Corporation for Atmospheric Research]"
-#define VERSION_INFO "MKRFS-260324"  // MKR Full Station - Release Date
+#define VERSION_INFO "MKRFS-260329"  // MKR Full Station - Release Date
 
 /*
  *======================================================================================================================
@@ -116,6 +116,7 @@
  *                  Added a main loop rollover check that will trigger an observation and rollover
  *   2026-03-25 RJB Added IMEI to INFO and fixed board type reporting
  *                  Added code to route LoRa INFO and LoRa Relay message to the proper logging site.
+ *   2026-03-29 RJB Added volatile to interrupt routine variable definations, moved TurnLedOff defination to wrda
  * ======================================================================================================================
  */
 
@@ -260,7 +261,6 @@
  * ======================================================================================================================
  */
 bool JustPoweredOn = true;    // Used to clear SystemStatusBits set during power on device discovery
-bool TurnLedOff = false;      // Set true in rain gauge interrupt
 
 char versioninfo[sizeof(VERSION_INFO)];  // allocate enough space including null terminator
 char msgbuf[MAX_MSGBUF_SIZE];   // Used to hold messages
