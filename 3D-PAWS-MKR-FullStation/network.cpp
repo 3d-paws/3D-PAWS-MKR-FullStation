@@ -393,6 +393,9 @@ void CM_initialize(){
  * SEE https://developer.mozilla.org/en-US/docs/Web/HTTP/Status#successful_responses
  * 
  * Example /measurements/url_create?key=FOOBAR&instrument_id=53&at=2022-05-17T17%3A40%3A04&hth=8770
+ * 
+ * Note: webserver_xapikey can be the Chords api key. Which means assigning it to X-API-Key: in the header does nothing.
+ *       it need to be in the msg as key=value we add this when we Convert the JSON to A GET
  * ======================================================================================================================
  */
 bool Send_http(char *msg, char *webserver, int webserver_port, char *webserver_path, int webserver_method, char *webserver_xapikey) {

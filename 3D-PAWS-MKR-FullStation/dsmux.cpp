@@ -34,7 +34,7 @@ float dsmux_readTemperature(uint8_t channel) {
   // Select the channel on the DS2482-800
   if (!ds248x.selectChannel(channel)) {
     // Handle error if channel selection fails
-    Serial.println("Failed to select channel");
+    Output("DSMUX:Select CH Err");
     return NAN; // Return 'Not a Number' to indicate an error
   }
 

@@ -852,11 +852,15 @@ void OBS_Do() {
         // Note a new LoRa RS msgs could be received as we are sending
         if (relay_type == 1) { 
           // INFO Message
+          Output ("SEND LORA INFO");
+          Output (cf_info_server);
           OK2Send = Send_http(obsbuf, cf_info_server, cf_info_server_port, cf_info_urlpath, METHOD_POST, cf_info_apikey);
         }
         else {
-          // Lora Relay
+          // Lora Relay - We will add key=cf_apikey in the json_to_get_string_inplace() function
           OK2Send = Send_http(obsbuf, cf_webserver, cf_webserver_port, cf_urlpath, METHOD_GET, cf_apikey);
+          Output ("SEND LORA OBS");
+          Output (cf_webserver);
         }
             
       }

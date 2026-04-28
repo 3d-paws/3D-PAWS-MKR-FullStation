@@ -1,5 +1,5 @@
 #define COPYRIGHT "Copyright [2026] [University Corporation for Atmospheric Research]"
-#define VERSION_INFO "MKRFS-260329"  // MKR Full Station - Release Date
+#define VERSION_INFO "MKRFS-260427"  // MKR Full Station - Release Date
 
 /*
  *======================================================================================================================
@@ -117,6 +117,8 @@
  *   2026-03-25 RJB Added IMEI to INFO and fixed board type reporting
  *                  Added code to route LoRa INFO and LoRa Relay message to the proper logging site.
  *   2026-03-29 RJB Added volatile to interrupt routine variable definations, moved TurnLedOff defination to wrda
+ *   2026-04-12 RJB Changed GetDeviceID() to be a length of 16 instead of 24
+ *   2026-04-27 RJB Bug fix relaying LoRa observations
  * ======================================================================================================================
  */
 

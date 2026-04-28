@@ -19,7 +19,7 @@
 
 // Extern variables
 extern const char *batterystate[];
-extern char DeviceID[25];
+extern char DeviceID[17];
 extern char CryptoID[19];
 extern const char* pinNames[];
 extern bool ECCX08_Exists;

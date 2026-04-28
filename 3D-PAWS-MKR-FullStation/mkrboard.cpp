@@ -10,7 +10,7 @@
 #include "include/output.h"
 #include "include/main.h"
 
-char DeviceID[25]; // A generated ID based on board's 128-bit serial number converted down to 96bits
+char DeviceID[17]; // A generated ID based on board's 128-bit serial number converted down to 96bits
 char CryptoID[19]; // Crypto Chip ID, Exactly 9 bytes from ECCX08, AKA 18 bytes HEX + NULL
 bool ECCX08_Exists=false;
 bool PMIC_exists = false;
@@ -37,7 +37,7 @@ const char *batterystate[] = {"UNKN", "!CHARGING", "CHARGING", "CHARGED", "DISCH
  * SAMD21 microcontroller's flash memory, compresses it to 12 bytes, and 
  * converts it to a 24-character hexadecimal string.
  * 
- * The compression is done by XORing the first 12 bytes with the last 12 bytes 
+ * The compression is done by XORing the first 8 bytes with the last 8 bytes 
  * of the original 16-byte identifier, ensuring all 128 bits contribute to 
  * the final result.
  * 
@@ -68,17 +68,17 @@ void GetDeviceID() {
     fullId[i*4 + 3] = val & 0xFF;
   }
 
-  // Compress 16 bytes to 12 bytes using XOR
-  uint8_t compressedId[12];
-  for (int i = 0; i < 12; i++) {
-    compressedId[i] = fullId[i] ^ fullId[i + 4];
+  // Compress 16 bytes to 8 bytes using XOR
+  uint8_t compressedId[8];
+  for (int i = 0; i < 8; i++) {
+    compressedId[i] = fullId[i] ^ fullId[i + 8];
   }
 
-  memset (DeviceID, 0, 25);
-  for (int i = 0; i < 12; i++) {
+  memset (DeviceID, 0, 17);
+  for (int i = 0; i < 8; i++) {
     sprintf (DeviceID+strlen(DeviceID), "%02x", compressedId[i]);
   }
-  DeviceID[24] = '\0'; // Ensure null-termination
+  DeviceID[16] = '\0'; // Ensure null-termination
 }
 
 /*

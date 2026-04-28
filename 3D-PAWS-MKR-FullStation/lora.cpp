@@ -326,14 +326,51 @@ void lora_relay_msg(char *obs) {
       return;
     }
   }
-
   m = &lora_msg_relay[idx]; // Lets work with a pointer and not the index
-  m->need2log = true;
-  m->message_type = message_type;
-  strncpy (m->message, message, LORA_RELAY_MSG_LENGTH-1); // minus 1 so last byte in array will always be null
-  sprintf (Buffer32Bytes, "LORA Relay %s -> Queued:%d", relay_msgtypes[message_type], idx);
-  Output (Buffer32Bytes);
+
+  if (message_type==2) { 
+    // Lora Relay -- We need to add additional Chords information
+
+    int current_len = strlen(message);
+    int remaining_space = LORA_RELAY_MSG_LENGTH - current_len;
+
+    // Only proceed if we have a closing brace and enough space
+    if (current_len > 0 && message[current_len - 1] == '}' && remaining_space > 2) {
+      strncpy (m->message, message, LORA_RELAY_MSG_LENGTH-1); // minus 1 so we reserve a byte for the null
+
+      // 3. Overwrite the brace with a comma and append the new content
+      // We use (current_len - 1) to point to the '}'
+      // We use (LORA_RELAY_MSG_LENGTH - current_len + 1) to prevent overflow
+      // The +1 is for the } we over wrote.
+      snprintf(m->message + current_len - 1, remaining_space + 1, 
+        ",\"key\":\"%s\",\"instrument_id\":%d}", cf_apikey, unit_id);
+    
+      m->need2log = true;
+      m->message_type = message_type;
+      sprintf (Buffer32Bytes, "LORA Relay %s -> Queued:%d", relay_msgtypes[message_type], idx);
+      Output (Buffer32Bytes);
+      Output (m->message);
+    }
+    else {
+      // Overflow
+      memset(m->message, 0, LORA_RELAY_MSG_LENGTH);
+      sprintf (Buffer32Bytes, "LORA Relay %s -> QFail", relay_msgtypes[message_type]);
+      Output (Buffer32Bytes);
+      Output (message);
+    }
+  }
+  else {
+    // INFO message - not logging to a Chords site
+    m->need2log = true;
+    m->message_type = message_type;
+    strncpy (m->message, message, LORA_RELAY_MSG_LENGTH-1); // minus 1 so last byte in array will always be null
+    sprintf (Buffer32Bytes, "LORA Relay %s -> Queued:%d", relay_msgtypes[message_type], idx);
+    Output (Buffer32Bytes);
+    Output (m->message);
+  }
 }
+
+
 
 /* 
  *=======================================================================================================================
