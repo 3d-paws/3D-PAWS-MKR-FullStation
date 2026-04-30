@@ -100,19 +100,6 @@ extern bool MCP_4_exists;
 
 /*
  * ======================================================================================================================
- *  SHTX - I2C - Temperature & Humidity sensor (SHT31)  - Note the SHT40, SHT45 use same i2c address
- * ======================================================================================================================
- */
-#define SHT_ADDRESS_1     0x44
-#define SHT_ADDRESS_2     0x45        // ADR pin set high, VDD
-
-extern Adafruit_SHT31 sht1;
-extern Adafruit_SHT31 sht2;
-extern bool SHT_1_exists;
-extern bool SHT_2_exists;
-
-/*
- * ======================================================================================================================
  *  HIH8 - I2C - Temperature & Humidity sensor (HIH8000)  - 
  * ======================================================================================================================
  */
@@ -217,23 +204,6 @@ extern int AQS_Correction ;
 
 /*
  * ======================================================================================================================
- *  HDC302x - I2C - Precision Temperature & Humidity Sensor
- *    Note HDC uses the same I2C Address as SHT. To avoid conflict we are using 0x46 as hdc1 and 0x47 and hdc2 
- *    manufacturerID = 0x3000  -- uint16_t Adafruit_HDC302x::readManufacturerID()
- * ======================================================================================================================
- */
-#define HDC_ADDRESS_1     0x46        // A1=1, A0=0  Need to solder jumper
-#define HDC_ADDRESS_2     0x47        // A1=1, A0=1  Need to solder jumper
-#define HDC_ADDRESS_3     0x44        // A1=0, A0=0  Not used, Default setting from vendor
-#define HDC_ADDRESS_4     0x45        // A1=0, A0=1  Not used
-
-extern Adafruit_HDC302x hdc1;
-extern Adafruit_HDC302x hdc2;
-extern bool HDC_1_exists;
-extern bool HDC_2_exists;
-
-/*
- * ======================================================================================================================
  *  LPS35HW - I2C - Pressure and Temperature
  *    Chip ID = 0xB1,  Library init checks this.
  * ======================================================================================================================
@@ -272,9 +242,10 @@ extern bool TSM_exists;
 // Function prototype
 byte get_Bosch_ChipID (byte address);
 void bmx_initialize();
+void bmx1_read(float &p, float &t, float &h);
+void bmx2_read(float &p, float &t, float &h);
 void htu21d_initialize();
 void mcp9808_initialize();
-void sht_initialize();
 void hih8_initialize();
 bool hih8_getTempHumid(float *t, float *h);
 void wbt_initialize();
@@ -287,7 +258,7 @@ double wbgt_using_wbt(double Ta, double Tg, double Tw);
 void mslp_initialize();
 double mslp_calculate(float Ts, float RH, float ps, int station_height);
 void lux_initialize(); // I2C 0x10 fyi same as GPS 
-bool blx_getconfig();
+//bool blx_getconfig();
 void blx_initialize();
 float blx_takereading();
 void pm25aqi_1m_clear();
@@ -296,7 +267,6 @@ void pm25aqi_initialize();
 void pm25aqi_Produce_1m_Average() ;
 void pm25aqi_TakeReading();
 void pm25aqi_TakeReading_AQS();
-void hdc_initialize();
 void lps_initialize();
 void tlw_initialize();
 void tsm_initialize();

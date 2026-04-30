@@ -19,6 +19,7 @@
 #include "include/support.h"
 #include "include/time.h"
 #include "include/sensors.h"
+#include "include/sensors_i2c_44_47.h"
 #include "include/main.h"
 #include "include/obs.h"
 
@@ -30,6 +31,7 @@
 OBSERVATION_STR obs;
 char obsbuf[MAX_OBS_SIZE];      // Url that holds observations for HTTP GET
 char *obsp;                     // Pointer to obsbuf
+float bmx_1_pressure = 0.0;
 
 int OBS_PubFailCnt = 0;
 
@@ -195,10 +197,7 @@ void OBS_Take() {
   int wd = 0;
   float mcp3_temp = 0.0;  // globe temperature
   float wetbulb_temp = 0.0;
-  float sht1_humid = 0.0;
-  float sht1_temp = 0.0;
   float heat_index = 0.0;
-  float bmx_1_pressure = 0.0;
 
   // Safty Check for Vaild Time
   if (!STC_valid) {
@@ -217,24 +216,12 @@ void OBS_Take() {
 
   // Rain Gauge 1 - Each tip is 0.2mm of rain
   if (cf_rg1_enable) {
-    rg1ds = (millis()-raingauge1_interrupt_stime)/1000;  // seconds since last rain gauge observation logged
-    rg1 = raingauge1_interrupt_count * 0.2;
-    raingauge1_interrupt_count = 0;
-    raingauge1_interrupt_stime = millis();
-    raingauge1_interrupt_ltime = 0; // used to debounce the tip
-    // QC Check - Max Rain for period is (Observations Seconds / 60s) *  Max Rain for 60 Seconds
-    rg1 = (isnan(rg1) || (rg1 < QC_MIN_RG) || (rg1 > (((float)rg1ds / 60) * QC_MAX_RG)) ) ? QC_ERR_RG : rg1;
+    rg1 = raingauge1_sample();
   }
 
   // Rain Gauge 2 - Each tip is 0.2mm of rain
   if (cf_op1 == OP1_STATE_RAIN) {
-    rg2ds = (millis()-raingauge2_interrupt_stime)/1000;  // seconds since last rain gauge observation logged
-    rg2 = raingauge2_interrupt_count * 0.2;
-    raingauge2_interrupt_count = 0;
-    raingauge2_interrupt_stime = millis();
-    raingauge2_interrupt_ltime = 0; // used to debounce the tip
-    // QC Check - Max Rain for period is (Observations Seconds / 60s) *  Max Rain for 60 Seconds
-    rg2 = (isnan(rg2) || (rg2 < QC_MIN_RG) || (rg2 > (((float)rg2ds / 60) * QC_MAX_RG)) ) ? QC_ERR_RG : rg2;
+    rg2 = raingauge2_sample();
   }
 
   if (RainEnabled()) {
@@ -364,32 +351,8 @@ void OBS_Take() {
   // Add I2C Sensors
   //
   if (BMX_1_exists) {
-    float p = 0.0;
-    float t = 0.0;
-    float h = 0.0;
-
-    if (BMX_1_chip_id == BMP280_CHIP_ID) {
-      p = bmp1.readPressure()/100.0F;       // bp1 hPa
-      t = bmp1.readTemperature();           // bt1
-    }
-    else if (BMX_1_chip_id == BME280_BMP390_CHIP_ID) {
-      if (BMX_1_type == BMX_TYPE_BME280) {
-        p = bme1.readPressure()/100.0F;     // bp1 hPa
-        t = bme1.readTemperature();         // bt1
-        h = bme1.readHumidity();            // bh1
-      }
-      if (BMX_1_type == BMX_TYPE_BMP390) {
-        p = bm31.readPressure()/100.0F;     // bp1 hPa
-        t = bm31.readTemperature();         // bt1       
-      }
-    }
-    else { // BMP388
-      p = bm31.readPressure()/100.0F;       // bp1 hPa
-      t = bm31.readTemperature();           // bt1
-    }
-    p = (isnan(p) || (p < QC_MIN_P)  || (p > QC_MAX_P))  ? QC_ERR_P  : p;
-    t = (isnan(t) || (t < QC_MIN_T)  || (t > QC_MAX_T))  ? QC_ERR_T  : t;
-    h = (isnan(h) || (h < QC_MIN_RH) || (h > QC_MAX_RH)) ? QC_ERR_RH : h;
+    float p,t,h;
+    bmx1_read(p, t, h);
     
     // BMX1 Preasure
     strcpy (obs.sensor[sidx].id, "bp1");
@@ -415,32 +378,8 @@ void OBS_Take() {
   }
 
   if (BMX_2_exists) {
-    float p = 0.0;
-    float t = 0.0;
-    float h = 0.0;
-
-    if (BMX_2_chip_id == BMP280_CHIP_ID) {
-      p = bmp2.readPressure()/100.0F;       // bp2 hPa
-      t = bmp2.readTemperature();           // bt2
-    }
-    else if (BMX_2_chip_id == BME280_BMP390_CHIP_ID) {
-      if (BMX_2_type == BMX_TYPE_BME280) {
-        p = bme2.readPressure()/100.0F;     // bp2 hPa
-        t = bme2.readTemperature();         // bt2
-        h = bme2.readHumidity();            // bh2 
-      }
-      if (BMX_2_type == BMX_TYPE_BMP390) {
-        p = bm32.readPressure()/100.0F;       // bp2 hPa
-        t = bm32.readTemperature();           // bt2
-      }      
-    }
-    else { // BMP388
-      p = bm32.readPressure()/100.0F;       // bp2 hPa
-      t = bm32.readTemperature();           // bt2
-    }
-    p = (isnan(p) || (p < QC_MIN_P)  || (p > QC_MAX_P))  ? QC_ERR_P  : p;
-    t = (isnan(t) || (t < QC_MIN_T)  || (t > QC_MAX_T))  ? QC_ERR_T  : t;
-    h = (isnan(h) || (h < QC_MIN_RH) || (h > QC_MAX_RH)) ? QC_ERR_RH : h;
+    float p,t,h;
+    bmx2_read(p, t, h);
 
     // BMX2 Preasure
     strcpy (obs.sensor[sidx].id, "bp2");
@@ -463,6 +402,9 @@ void OBS_Take() {
     }
   }
 
+  // Do Sensor observations for SHT31, SHT45, BMP581, HDC302x
+  sensor_i2c_44_47_obs_do(sidx); 
+
   if (HTU21DF_exists) {
     float t = 0.0;
     float h = 0.0;
@@ -481,100 +423,6 @@ void OBS_Take() {
     t = htu.readTemperature();
     t = (isnan(t) || (t < QC_MIN_T)  || (t > QC_MAX_T))  ? QC_ERR_T  : t;
     obs.sensor[sidx].f_obs = t;
-    obs.sensor[sidx++].inuse = true;
-  }
-
-  if (SHT_1_exists) {
-    float t = 0.0;
-    float h = 0.0;
-
-    // SHT1 Temperature
-    strcpy (obs.sensor[sidx].id, "st1");
-    obs.sensor[sidx].type = F_OBS;
-    t = sht1.readTemperature();
-    t = (isnan(t) || (t < QC_MIN_T)  || (t > QC_MAX_T))  ? QC_ERR_T  : t;
-    obs.sensor[sidx].f_obs = t;
-    obs.sensor[sidx++].inuse = true;
-    
-    // SHT1 Humidity   
-    strcpy (obs.sensor[sidx].id, "sh1");
-    obs.sensor[sidx].type = F_OBS;
-    h = sht1.readHumidity();
-    h = (isnan(h) || (h < QC_MIN_RH) || (h > QC_MAX_RH)) ? QC_ERR_RH : h;
-    obs.sensor[sidx].f_obs = h;
-    obs.sensor[sidx++].inuse = true;
-
-    sht1_humid = h; // save for derived observations
-  }
-
-  if (SHT_2_exists) {
-    float t = 0.0;
-    float h = 0.0;
-
-    // SHT2 Temperature
-    strcpy (obs.sensor[sidx].id, "st2");
-    obs.sensor[sidx].type = F_OBS;
-    t = sht2.readTemperature();
-    t = (isnan(t) || (t < QC_MIN_T)  || (t > QC_MAX_T))  ? QC_ERR_T  : t;
-    obs.sensor[sidx].f_obs = t;
-    obs.sensor[sidx++].inuse = true;
-    
-    // SHT2 Humidity   
-    strcpy (obs.sensor[sidx].id, "sh2");
-    obs.sensor[sidx].type = F_OBS;
-    h = sht2.readHumidity();
-    h = (isnan(h) || (h < QC_MIN_RH) || (h > QC_MAX_RH)) ? QC_ERR_RH : h;
-    obs.sensor[sidx].f_obs = h;
-    obs.sensor[sidx++].inuse = true;
-  }
-
-  if (HDC_1_exists) {
-    double t = -999.9;
-    double h = -999.9;
-
-    if (hdc1.readTemperatureHumidityOnDemand(t, h, TRIGGERMODE_LP0)) {
-      t = (isnan(t) || (t < QC_MIN_T)  || (t > QC_MAX_T))  ? QC_ERR_T  : t;
-      h = (isnan(h) || (h < QC_MIN_RH) || (h > QC_MAX_RH)) ? QC_ERR_RH : h;
-    }
-    else {
-      Output (F("ERR:HDC1 Read"));
-    }
-
-    // HDC1 Temperature
-    strcpy (obs.sensor[sidx].id, "hdt1");
-    obs.sensor[sidx].type = F_OBS;
-    obs.sensor[sidx].f_obs = (float) t;
-    obs.sensor[sidx++].inuse = true;
-
-    // HDC1 Humidity
-    strcpy (obs.sensor[sidx].id, "hdh1");
-    obs.sensor[sidx].type = F_OBS;
-    obs.sensor[sidx].f_obs = (float) h;
-    obs.sensor[sidx++].inuse = true;
-  }
-
-  if (HDC_2_exists) {
-    double t = -999.9;
-    double h = -999.9;
-
-    if (hdc2.readTemperatureHumidityOnDemand(t, h, TRIGGERMODE_LP0)) {
-      t = (isnan(t) || (t < QC_MIN_T)  || (t > QC_MAX_T))  ? QC_ERR_T  : t;
-      h = (isnan(h) || (h < QC_MIN_RH) || (h > QC_MAX_RH)) ? QC_ERR_RH : h;
-    }
-    else {
-      Output (F("ERR:HDC1 Read"));
-    }
-
-    // HDC2 Temperature
-    strcpy (obs.sensor[sidx].id, "hdt2");
-    obs.sensor[sidx].type = F_OBS;
-    obs.sensor[sidx].f_obs = (float) t;
-    obs.sensor[sidx++].inuse = true;
-
-    // HDC2 Humidity
-    strcpy (obs.sensor[sidx].id, "hdh2");
-    obs.sensor[sidx].type = F_OBS;
-    obs.sensor[sidx].f_obs = (float) h;
     obs.sensor[sidx++].inuse = true;
   }
 

@@ -101,7 +101,9 @@ void rtc_initialize() {
   // Do a validation check on the year. 
   // Asumption is: If RTC not set, it will not have the current year.
   
-  if ((now.year() >= 2025) && (now.year() <= 2035)) {
+  if ((now.year() >= TM_VALID_YEAR_START) && (now.year() <= TM_VALID_YEAR_END) && 
+      (now.month() >= 1) && (now.month() <=12) &&
+      (now.day() >= 1) && (now.day() <=31)) {
     RTC_valid = true;
     Output(F("RTC:VALID"));
     
@@ -139,7 +141,9 @@ void NetworkTimeManagement() {
 
             // Set Real Time Clock
             DateTime dt_networktime = DateTime(networktime);
-            if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END)) {
+              if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END) && 
+                  (dt_networktime.month() >= 1) && (dt_networktime.month() <=12) &&
+                  (dt_networktime.day() >= 1) && (dt_networktime.day() <=31)) {
               rtc.adjust(dt_networktime);
               Output(F("RTC:SET"));
               rtc_timestamp();
@@ -178,7 +182,9 @@ void NetworkTimeManagement() {
         if (networktime) { // Chose a time that is in the past. 
           // Update Real Time Clock
           DateTime dt_networktime = DateTime(networktime);
-          if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END)) {
+          if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END) && 
+              (dt_networktime.month() >= 1) && (dt_networktime.month() <=12) &&
+              (dt_networktime.day() >= 1) && (dt_networktime.day() <=31)) {
             rtc.adjust(dt_networktime);
             Output(F("RTC:UPDATED"));
             rtc_timestamp();
@@ -213,7 +219,9 @@ void NetworkTimeManagement() {
         unsigned long networktime = GetCellEpochTime(); // This is UTC time. 
         if (networktime) {
           DateTime dt_networktime = DateTime(networktime);
-          if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END)) {
+          if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END) && 
+              (dt_networktime.month() >= 1) && (dt_networktime.month() <=12) &&
+              (dt_networktime.day() >= 1) && (dt_networktime.day() <=31)) {
             // Set System Time Clock
             stc.setEpoch(networktime);
             Output(F("STC:SET"));
@@ -241,7 +249,9 @@ void NetworkTimeManagement() {
         unsigned long networktime = GetCellEpochTime(); // This is UTC time. 
         if (networktime) {
           DateTime dt_networktime = DateTime(networktime);
-          if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END)) {
+          if ((dt_networktime.year() >= TM_VALID_YEAR_START) && (dt_networktime.year() <= TM_VALID_YEAR_END) && 
+              (dt_networktime.month() >= 1) && (dt_networktime.month() <=12) &&
+              (dt_networktime.day() >= 1) && (dt_networktime.day() <=31)) {
             // Set System Time Clock
             stc.setEpoch(networktime);
             Output(F("STC:UPDATED"));

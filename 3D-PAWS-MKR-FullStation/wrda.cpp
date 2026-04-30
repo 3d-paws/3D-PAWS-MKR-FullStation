@@ -5,6 +5,7 @@
  */
 #include <Arduino.h>
 
+#include "include/qc.h"
 #include "include/ssbits.h"
 #include "include/output.h"
 #include "include/cf.h"
@@ -113,12 +114,37 @@ void anemometer_interrupt_handler()
  */
 void raingauge1_interrupt_handler()
 {
-  if ((millis() - raingauge1_interrupt_ltime) > 500) { // Count tip if a half second has gone by since last interrupt
-    digitalWrite(LED_PIN, HIGH);
-    raingauge1_interrupt_ltime = millis();
+  unsigned long now = millis();
+  if ((now - raingauge1_interrupt_ltime) > 500) { // Count tip if a half second has gone by since last interrupt
+    raingauge1_interrupt_ltime = now;
     raingauge1_interrupt_count++;
+    digitalWrite(LED_PIN, HIGH);
     TurnLedOff = true;
-  }   
+  }
+}
+
+/*
+ * ======================================================================================================================
+ *  raingauge1_sample() - return rain amount since last sample
+ * ======================================================================================================================
+ */
+float raingauge1_sample() {
+  unsigned long time_ms, rg1ds, count;
+  float rg1;
+
+  noInterrupts();
+  time_ms = millis();
+  rg1ds = (time_ms - raingauge1_interrupt_stime) / 1000;
+  count = raingauge1_interrupt_count;
+  raingauge1_interrupt_count = 0;
+  raingauge1_interrupt_stime = time_ms;
+  raingauge1_interrupt_ltime = 0;
+  interrupts();
+
+  rg1 = count * 0.2f;
+  rg1 = (isnan(rg1) || (rg1 < QC_MIN_RG) || (rg1 > (((float)rg1ds / 60.0f) * QC_MAX_RG))) ? QC_ERR_RG : rg1;
+
+  return rg1;
 }
 
 /*
@@ -128,12 +154,37 @@ void raingauge1_interrupt_handler()
  */
 void raingauge2_interrupt_handler()
 {
-  if ((millis() - raingauge2_interrupt_ltime) > 500) { // Count tip if a half second has gone by since last interrupt
-    digitalWrite(LED_PIN, HIGH);
-    raingauge2_interrupt_ltime = millis();
+  unsigned long now = millis();
+  if ((now - raingauge2_interrupt_ltime) > 500) { // Count tip if a half second has gone by since last interrupt
+    raingauge2_interrupt_ltime = now;
     raingauge2_interrupt_count++;
+    digitalWrite(LED_PIN, HIGH);
     TurnLedOff = true;
-  }   
+  }
+}
+
+/*
+ * ======================================================================================================================
+ *  raingauge2_sample() - return rain amount since last sample
+ * ======================================================================================================================
+ */
+float raingauge2_sample() {
+  unsigned long time_ms, rg2ds, count;
+  float rg2;
+
+  noInterrupts();
+  time_ms = millis();
+  rg2ds = (time_ms - raingauge2_interrupt_stime) / 1000;
+  count = raingauge2_interrupt_count;
+  raingauge2_interrupt_count = 0;
+  raingauge2_interrupt_stime = time_ms;
+  raingauge2_interrupt_ltime = 0;
+  interrupts();
+
+  rg2 = count * 0.2f;
+  rg2 = (isnan(rg2) || (rg2 < QC_MIN_RG) || (rg2 > (((float)rg2ds / 60.0f) * QC_MAX_RG))) ? QC_ERR_RG : rg2;
+
+  return rg2;
 }
 
 /* 
@@ -160,31 +211,30 @@ bool RainEnabled() {
  *=======================================================================================================================
  */
 float Wind_SampleSpeed() {
-  unsigned long delta_ms, time_ms;
+  unsigned long time_ms, delta_ms, count;
   float wind_speed;
-  
-  time_ms = millis();
 
-  // Handle the clock rollover after about 50 days. (Should not be an issue since we reboot every day)
-  if (time_ms < anemometer_interrupt_stime) {
-    delta_ms = (0xFFFFFFFF - anemometer_interrupt_stime) + time_ms;
-  }
-  else {
-    delta_ms = millis()-anemometer_interrupt_stime;
-  }
-  
-  if (anemometer_interrupt_count && (delta_ms>0)) {
-    wind_speed = ( ( anemometer_interrupt_count * 3.14156 * ws_radius)  / 
-      (float)( (float)delta_ms / 1000) )  * ws_calibration;
-  }
-  else {
-    wind_speed = 0.0;
-  }
-
+  noInterrupts();
+  count = anemometer_interrupt_count;
   anemometer_interrupt_count = 0;
-  anemometer_interrupt_stime = millis(); 
-  return (wind_speed);
-} 
+  time_ms = millis();
+  interrupts();
+
+  // Unsigned subtraction naturally wraps on rollover, so if time_ms has rolled past zero and anemometer_interrupt_stime 
+  // is still the old large value, the subtraction still produces the correct elapsed time.
+  delta_ms = time_ms - anemometer_interrupt_stime;
+  anemometer_interrupt_stime = time_ms;
+
+  if (count && delta_ms > 0) {
+    // wind_speed = (  ( (count/2) * (2 * 3.14156 * ws_radius) )  / (float)( (float)delta_ms / 1000)  ) * ws_calibration;
+    
+    wind_speed = ((count * 3.14156f * ws_radius) / ((float)delta_ms / 1000.0f)) * ws_calibration;
+  } else {
+    wind_speed = 0.0f;
+  }
+
+  return wind_speed;
+}
 
 /* 
  *=======================================================================================================================
@@ -198,7 +248,7 @@ int Wind_SampleDirection() {
   Wire.beginTransmission(AS5600_ADR);
   Wire.write(AS5600_raw_ang_lo);
   if (Wire.endTransmission()) {
-    Output ("WD RD_LOW_ERR");
+    //Output ("WD RD_LOW_ERR");
   }
   else if (Wire.requestFrom(AS5600_ADR, 1)) {
     int AS5600_lo_raw = Wire.read();
@@ -207,7 +257,7 @@ int Wind_SampleDirection() {
     Wire.beginTransmission(AS5600_ADR);
     Wire.write(AS5600_raw_ang_hi);
     if (Wire.endTransmission()) {
-      Output ("WD RD_HI_ERR");
+      // Output ("WD RD_HI_ERR");
     }
     else if (Wire.requestFrom(AS5600_ADR, 1)) {
       word AS5600_hi_raw = Wire.read();
@@ -545,7 +595,7 @@ void Wind_Distance_Air_Initialize() {
   if (!cf_nowind) {
     Wind_TakeReading();
     float ws = Wind_SpeedAverage();
-    sprintf (Buffer32Bytes, "WS:%d.%02d WD:%d", (int)ws, (int)(ws*100)%100, Wind_DirectionVector());
+    sprintf (Buffer32Bytes, "WS:%.2f WD:%d", ws, Wind_DirectionVector());
     Output (Buffer32Bytes);
   }
   

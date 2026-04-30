@@ -109,8 +109,9 @@ extern unsigned int dg_resolution_adjust;
 // Function prototype
 void anemometer_interrupt_handler();
 void raingauge1_interrupt_handler();
+float raingauge1_sample();
 void raingauge2_interrupt_handler();
-
+float raingauge2_sample();
 bool RainEnabled();
 float Wind_SampleSpeed();
 int Wind_SampleDirection();

@@ -7,6 +7,7 @@
 
 #include "include/ssbits.h"
 #include "include/mkrboard.h"
+#include "include/sensors_i2c_44_47.h"
 #include "include/sensors.h"
 #include "include/wrda.h"
 #include "include/cf.h"
@@ -105,40 +106,9 @@ void StationMonitor() {
   // =================================================================
   if (cycle == 0) {
     if (BMX_1_exists) {
-      float bmx_pressure = 0.0;
-      float bmx_temp = 0.0;
-      float bmx_humid;
-      
-      switch (BMX_1_chip_id) {
-        case BMP280_CHIP_ID :
-          bmx_pressure = bmp1.readPressure()/100.0F;           // bmxp1
-          bmx_temp = bmp1.readTemperature();                   // bmxt1
-          break;
-        
-        case BME280_BMP390_CHIP_ID :
-          if (BMX_1_type == BMX_TYPE_BME280) {
-            bmx_pressure = bme1.readPressure()/100.0F;           // bmxp1
-            bmx_temp = bme1.readTemperature();                   // bmxt1
-            bmx_humid = bme1.readHumidity();                     // bmxh1 
-          }
-          else { // BMX_TYPE_BMP390
-            bmx_pressure = bm31.readPressure()/100.0F;
-            bmx_temp = bm31.readTemperature();
-          }
-          break;
-          
-        case BMP388_CHIP_ID :
-          bmx_pressure = bm31.readPressure()/100.0F;
-          bmx_temp = bm31.readTemperature();
-          break;
-        
-        default: // WTF
-          break;
-      }
-      sprintf (msgbuf, "B1 %d.%02d %d.%02d %d.%02d", 
-        (int)bmx_pressure, (int)(bmx_pressure*100)%100,
-        (int)bmx_temp, (int)(bmx_temp*100)%100,
-        (int)bmx_humid, (int)(bmx_humid*100)%100);
+      float p,t,h;
+      bmx1_read(p, t, h);
+      sprintf (msgbuf, "B1 %.2f %.2f %.2f", p,t,h);
     }
     else {
       sprintf (msgbuf, "B1 NF");
@@ -147,40 +117,9 @@ void StationMonitor() {
   
   if (cycle == 1) {
     if (BMX_2_exists) {
-      float bmx_pressure = 0.0;
-      float bmx_temp = 0.0;
-      float bmx_humid;
-      
-      switch (BMX_2_chip_id) {
-        case BMP280_CHIP_ID :
-          bmx_pressure = bmp2.readPressure()/100.0F;           // bmxp1
-          bmx_temp = bmp2.readTemperature();                   // bmxt1
-          break;
-        
-        case BME280_BMP390_CHIP_ID :
-          if (BMX_2_type == BMX_TYPE_BME280) {
-            bmx_pressure = bme2.readPressure()/100.0F;           // bmxp1
-            bmx_temp = bme2.readTemperature();                   // bmxt1
-            bmx_humid = bme2.readHumidity();                     // bmxh1 
-          }
-          else { // BMX_TYPE_BMP390
-            bmx_pressure = bm32.readPressure()/100.0F;
-            bmx_temp = bm32.readTemperature();
-          }
-          break;
-          
-        case BMP388_CHIP_ID :
-          bmx_pressure = bm32.readPressure()/100.0F;
-          bmx_temp = bm32.readTemperature();
-          break;
-        
-        default: // WTF
-          break;
-      }
-      sprintf (msgbuf, "B2 %d.%02d %d.%02d %d.%02d", 
-        (int)bmx_pressure, (int)(bmx_pressure*100)%100,
-        (int)bmx_temp, (int)(bmx_temp*100)%100,
-        (int)bmx_humid, (int)(bmx_humid*100)%100);
+      float p,t,h;
+      bmx2_read(p, t, h);
+      sprintf (msgbuf, "B2 %.2f %.2f %.2f", p,t,h);
     }
     else {
       sprintf (msgbuf, "B2 NF");
@@ -192,7 +131,7 @@ void StationMonitor() {
       
     if (MCP_1_exists) {
       float mcp_temp = mcp1.readTempC();   
-      sprintf (msgbuf, "MCP1 T%d.%02d", (int)mcp_temp, (int)(mcp_temp*100)%100);
+      sprintf (msgbuf, "MCP1 T%.2f", mcp_temp);
     }
     else {
       sprintf (msgbuf, "MCP1 NF");
@@ -202,65 +141,54 @@ void StationMonitor() {
   if (cycle == 3) {
     if (MCP_2_exists) {
       float mcp_temp = mcp2.readTempC();   
-      sprintf (msgbuf, "MCP2 T%d.%02d", (int)mcp_temp, (int)(mcp_temp*100)%100);
+      sprintf (msgbuf, "MCP2 T%.2f", mcp_temp);
     }
     else {
       sprintf (msgbuf, "MCP2 NF");
     }
   }
 
-  if (cycle == 4) {   
+  if (cycle == 4) {
+   sensor_i2c_44_47_statmon(0, Buffer32Bytes);
+   sprintf (msgbuf, "%s", Buffer32Bytes);
+  }
+  if (cycle == 5) {
+   sensor_i2c_44_47_statmon(1, Buffer32Bytes);
+   sprintf (msgbuf, "%s", Buffer32Bytes);
+  }
+  if (cycle == 6) {
+   sensor_i2c_44_47_statmon(2, Buffer32Bytes);
+   sprintf (msgbuf, "%s", Buffer32Bytes);
+  }
+  if (cycle == 7) {
+   sensor_i2c_44_47_statmon(3, Buffer32Bytes);
+   sprintf (msgbuf, "%s", Buffer32Bytes);
+  }
+
+  if (cycle == 8) {   
     if (HTU21DF_exists) {
       float htu_humid = htu.readHumidity();
       float htu_temp = htu.readTemperature();
 
-      sprintf (msgbuf, "HTU H:%02d.%02d T:%02d.%02d", 
-        (int)htu_humid, (int)(htu_humid*100)%100, 
-        (int)htu_temp, (int)(htu_temp*100)%100);
+      sprintf (msgbuf, "HTU H:%0.2f T:%0.2f", htu_humid, htu_temp);
     }
     else {
       sprintf (msgbuf, "HTU NF"); 
     } 
   }
 
-  if (cycle == 5) {   
+  if (cycle == 9) {   
     if (VEML7700_exists) {
       float lux = veml.readLux(VEML_LUX_AUTO);
       lux = (isnan(lux)) ? 0.0 : lux;
-        sprintf (msgbuf, "LX L%02d.%1d", (int)lux, (int)(lux*10)%10);
+        sprintf (msgbuf, "LX L%.2f", lux);
     }
     else {
       sprintf (msgbuf, "LX NF");
     }
   }
 
-  if (cycle == 6) {
-    if (SHT_1_exists) {
-      float t = sht1.readTemperature();
-      float h = sht1.readHumidity();
-      sprintf (msgbuf, "SHT1 T:%d.%02d H:%d.%02d", 
-         (int)t, (int)(t*100)%100,
-         (int)h, (int)(h*100)%100);
-    }
-    else {
-      sprintf (msgbuf, "SHT1 NF");
-    }
-  }
-
-  if (cycle == 7) {
-    if (SHT_2_exists) {
-      float t = sht2.readTemperature();
-      float h = sht2.readHumidity();
-      sprintf (msgbuf, "SHT2 T:%d.%02d H:%d.%02d", 
-         (int)t, (int)(t*100)%100,
-         (int)h, (int)(h*100)%100);
-    }
-    else {
-      sprintf (msgbuf, "SHT2 NF");
-    }      
-  }
-
-  if (cycle == 8) {   
+  if (cycle == 10) {   
     if (HIH8_exists) {
       float t = 0.0;
       float h = 0.0;
@@ -269,21 +197,14 @@ void StationMonitor() {
         t = -999.99;
         h = 0.0;
       }
-      sprintf (msgbuf, "HIH8 T%d.%02d H%d.%02d", 
-         (int)t, (int)(t*100)%100,
-         (int)h, (int)(h*100)%100);
+      sprintf (msgbuf, "HIH8 T%.2f H%.2f", t,h);
     }
     else {
       sprintf (msgbuf, "HIH8 NF");
     }
   }
-
-  if (cycle == 9) {
-    // SI1145 I2C addr conflicts with Crypto chip
-    sprintf (msgbuf, "SI NF");
-  }
   
-  if (cycle == 10) {
+  if (cycle == 11) {
     if (PM25AQI_exists) {
       sprintf (msgbuf, "PM 10:%d 25:%d 100:%d", 
         pm25aqi_obs.e10,
@@ -301,7 +222,7 @@ void StationMonitor() {
 
   // Give the use some time to read line 3 before changing
   if (count++ >= 5) {
-    cycle = ++cycle % 11;
+    cycle = ++cycle % 12; // << +1
     count = 0;
   }
   

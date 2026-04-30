@@ -1,5 +1,5 @@
 #define COPYRIGHT "Copyright [2026] [University Corporation for Atmospheric Research]"
-#define VERSION_INFO "MKRFS-260427"  // MKR Full Station - Release Date
+#define VERSION_INFO "MKRFS-260429"  // MKR Full Station - Release Date
 
 /*
  *======================================================================================================================
@@ -119,6 +119,16 @@
  *   2026-03-29 RJB Added volatile to interrupt routine variable definations, moved TurnLedOff defination to wrda
  *   2026-04-12 RJB Changed GetDeviceID() to be a length of 16 instead of 24
  *   2026-04-27 RJB Bug fix relaying LoRa observations
+ * 
+ *   2026-04-29 RJB Disabled interrupts when reading and setting shared values with the ISRs
+ *                  Created functions to obtain rg1 and rg2 values
+ *                  Modified rain ISR to only call millis() once.
+ *                  It is possible for the RTC PCF8523 or its library to give you a month value of 0 added check.
+ *                  Code clean up on BMX processing in OBS and Station monitor, utilizing BMX_1_type from initializtion
+ *                  Code clean up switch to %.2f on sprintf
+ *                  Add BMP581 and SMT45 - rework the i2c 0x44 - 0x47 sensore handling
+ *                  Cleaned up the printing of floating point numbers to use %.2f
+ *                  Added SHT Serial Number to initialization output and INFO. Also heater info.
  * ======================================================================================================================
  */
 
@@ -178,7 +188,7 @@
  *
  * NOYITO 1-Channel PC817 Optocoupler Isolation Module 3-5V
  *   SEE https://www.amazon.com/dp/B0B5373L4P
- * 
+ *
  * 1-Wire Bus Adapter1wire
  *   SEE https://github.com/adafruit/Adafruit_DS248x
  *       https://learn.adafruit.com/adafruit-ds2482s-800-8-channel-i2c-to-1-wire-bus-adapter
@@ -250,7 +260,8 @@
 #include "include/network.h"        // MKR modem network related functions
 #include "include/wrda.h"           // Wind Rain Distance Air Functions
 #include "include/mux.h"            // Mux Functions for mux connected sensors
-#include "include/dsmux.h"          // Dallas One Wire Mux Functions 
+#include "include/dsmux.h"          // Dallas One Wire Mux Functions
+#include "include/sensors_i2c_44_47.h" // Handle i2c Sensors in this address range
 #include "include/sensors.h"        // I2C Based Sensor Functions
 #include "include/statmon.h"        // Station Monitor Functions
 #include "include/obs.h"            // Observation Functions
@@ -496,14 +507,17 @@ void setup()
   // Scan Dallas 1-Wire Mux for temperature sensors
   dsmux_initialize();
 
-  bmx_initialize();
-  htu21d_initialize();
+  bmx_initialize(); // This needs to run before sensor_initialize_i2c_44_47() so we know 
+                    // what obs tag name to assign to bmp581 if it exists.
+
+  // Scan for sensors BMP581 SHT31 SHT45 HDC302x and initialize
+  sensor_initialize_i2c_44_47();
+
+  htu21d_initialize(); // This sensor has same i2c address as AS5600L
   mcp9808_initialize();
-  sht_initialize();
   hih8_initialize();
   lux_initialize();
   pm25aqi_initialize();
-  hdc_initialize();
   lps_initialize();
 
   // Tinovi Leaf Mositure Sensor

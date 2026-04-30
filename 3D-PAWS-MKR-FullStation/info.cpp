@@ -12,6 +12,7 @@
 #include "include/cf.h"
 #include "include/mux.h"
 #include "include/dsmux.h"
+#include "include/sensors_i2c_44_47.h"
 #include "include/sensors.h"
 #include "include/wrda.h"
 #include "include/sdcard.h"
@@ -162,22 +163,10 @@ void INFO_Perform() {
     sprintf (msg+strlen(msg), "%sMCP4/gt2", comma);
     comma=",";
   }
-  if (SHT_1_exists) {
-    sprintf (msg+strlen(msg), "%sSHT1", comma);
-    comma=",";
-  }
-  if (SHT_2_exists) {
-    sprintf (msg+strlen(msg), "%sSHT2", comma);
-    comma=",";
-  }
-  if (HDC_1_exists) {
-    sprintf (msg+strlen(msg), "%sHDC1", comma);
-    comma=",";
-  }
-  if (HDC_2_exists) {
-    sprintf (msg+strlen(msg), "%sHDC2", comma);
-    comma=",";
-  }
+
+  // Add 0x44-0x47 sensors to the list
+  sensor_i2c_44_47_info(msg, 1024, comma);
+
   if (LPS_1_exists) {
     sprintf (msg+strlen(msg), "%sLPS1", comma);
     comma=",";
